@@ -7,6 +7,7 @@ import android.location.Location;
 import android.util.Log;
 
 import com.google.android.gms.maps.model.LatLng;
+import com.google.android.gms.maps.model.MarkerOptions;
 import com.iot.locallization_ibeacon.pojo.Beacon;
 import com.iot.locallization_ibeacon.pojo.GlobalData;
 
@@ -22,61 +23,8 @@ import java.util.List;
 
 public class Tools extends  Activity {
 
-    private static double coefficient1= 0.42093;
-    private static double coefficient2= 6.9476;
-    private static double coefficient3 =0.54992;
-    private static String TAG = "Tools";
-    public static  String path="/sdcard/sensorInfo.txt";
-   // public static  String path= "file:///android_asset//sensorInfo.txt";
+    public static  String path = "/sdcard/sensorInfo.txt";
     public static final char[] hexArray = "0123456789ABCDEF".toCharArray();
-
-
-    public static double CalDistatce(LatLng point1,LatLng point2 ) {
-        double lat1=point1.latitude;
-        double lat2=point2.latitude;
-        double lon1=point1.longitude;
-        double lon2=point2.longitude;
-        double R = 6371;
-        double distance = 0.0;
-        double dLat = (lat2 - lat1) * Math.PI / 180;
-        double dLon = (lon2 - lon1) * Math.PI / 180;
-        double a = Math.sin(dLat / 2) * Math.sin(dLat / 2)
-                + Math.cos(lat1 * Math.PI / 180)
-                * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLon / 2)
-                * Math.sin(dLon / 2);
-        distance = (2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))) * R;
-        return distance*1000;
-    }
-
-    public static void AppendToConfigFile(Beacon sensor)
-    {
-        try {
-
-            FileWriter writer = new FileWriter(path,true);
-            String msg = sensor.ID+","+sensor.major+","+sensor.minor+","
-                    +sensor.position.latitude+","+ sensor.position.longitude
-                    +","+sensor.floor+","+sensor.max_rssi+",";
-            writer.write(msg+"\n");
-            writer.close();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
-
-    public static void WriteToConfigFile(Beacon sensor)
-    {
-        try {
-
-            FileWriter writer = new FileWriter(path);
-            String msg = sensor.ID+","+sensor.major+","+sensor.minor+","
-                    +sensor.position.latitude+","+ sensor.position.longitude+","
-                    +sensor.floor+","+sensor.max_rssi+",";
-            writer.write(msg+"\n");
-            writer.close();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
 
     private static final int CHECK_INTERVAL = 1000 * 30;
     public  static boolean isBetterLocation(Location location,Location currentBestLocation) {
@@ -134,48 +82,52 @@ public class Tools extends  Activity {
         return provider1.equals(provider2);
     }
 
-    public static void ReadConfigFile(Context context)
-    {
+    public static void ReadConfigFile(Context context) {
         DatabaseContext dbContext = new DatabaseContext(context);
         SQLiteHelper helper = new SQLiteHelper(dbContext,"BLEdevice.db");
         List<Beacon> beacons = helper.selectAll();
         for (Beacon beacon:beacons) {
+            beacon.markerOptions.position(beacon.position).title(beacon.ID)
+                    .snippet("x:" + Tools.formatFloat(beacon.position.latitude)
+                    + " y:" + Tools.formatFloat(beacon.position.longitude)
+                    + "\n max_rssi:" +beacon.max_rssi);
             GlobalData.beaconlist.put(beacon.ID,beacon);
         }
 
     }
 
-    public static List<Beacon> ReadConfigFile2()
-    {
-        List<Beacon> beacons = new ArrayList<Beacon>();
-        try
-        {
+    public static List<Beacon> ReadConfigFile2() {
+        List<Beacon> beacons = new ArrayList();
+        try {
+
             BufferedReader br = new BufferedReader(new FileReader(path));
             String data = br.readLine();
             GlobalData.beaconlist.clear();
             while( data!=null) {
                 Beacon sensor = new Beacon();
                 String[] info = data.split(",");
-                // sensor.mac = info[0];
+
                 sensor.ID = info[0];
                 sensor.major= info[1];
                 sensor.minor= info[2];
-                sensor.position = new LatLng(Double.parseDouble(info[3]),Double.parseDouble(info[4])) ;
+                sensor.position = new LatLng(Double.parseDouble(info[3]),Double.parseDouble(info[4]));
                 sensor.floor =Integer.parseInt(info[5]);
                 sensor.max_rssi = Integer.parseInt(info[6]);
 
                 sensor.markerOptions.title(sensor.ID).draggable(true);
                 sensor.markerOptions.position(sensor.position);
-                sensor.markerOptions.snippet("x:" + sensor.position.latitude + "y:" + sensor.position.latitude + "\n max_rssi:" + sensor.max_rssi);
-                //GlobalData.beaconlist.put(sensor.ID, sensor);
+                sensor.markerOptions.snippet("x:" + sensor.position.latitude
+                                            + "y:" + sensor.position.latitude
+                                            + "\n max_rssi:" + sensor.max_rssi);
                 beacons.add(sensor);
                 Log.e("ReadConfigFile ", sensor.toString());
                 data = br.readLine();
+
             }
+
             br.close();
-        }
-        catch (IOException e)
-        {
+
+        } catch (IOException e) {
             e.printStackTrace();
         }
 
@@ -183,8 +135,7 @@ public class Tools extends  Activity {
 
     }
 
-    public static String formatFloat(double num)
-    {
+    public static String formatFloat(double num) {
         DecimalFormat decimalFormat=new DecimalFormat(".00000");
         String p=decimalFormat.format(num);
         return  p;
@@ -199,36 +150,13 @@ public class Tools extends  Activity {
         return  httpOperationUtils .doGet(url+param);
     }
 
-    public double calculateDistance(int txPower, double rssi)
-    {
-        double ratio = rssi*1.0/txPower;
-        double distance;
-
-        if (rssi == 0)
-        {
-            return -1.0;
-        }
-
-        if (ratio < 1.0)
-        {
-            distance =  Math.pow(ratio,10);
-        }
-        else
-        {
-            distance =  (coefficient1)*Math.pow(ratio,coefficient2) + coefficient3;
-        }
-        return distance;
-    }
-
-    public static Beacon dealScan(BluetoothDevice device, int rssi, byte[] scanRecord)
-    {
+    public static Beacon dealScan(BluetoothDevice device, int rssi, byte[] scanRecord) {
         int startByte = 2;
-        boolean patternFound = false;
         while (startByte <= 5)
         {
-            if (((int) scanRecord[startByte + 2] & 0xff) == 0x02 && ((int) scanRecord[startByte + 3] & 0xff) == 0x15)
+            if (((int) scanRecord[startByte + 2] & 0xff) == 0x02
+                    && ((int) scanRecord[startByte + 3] & 0xff) == 0x15)
             {
-                patternFound = true;
                 break;
             }
             startByte++;
@@ -238,23 +166,20 @@ public class Tools extends  Activity {
         System.arraycopy(scanRecord, startByte + 4, uuidBytes, 0, 16);
         String hexString = bytesToHex(uuidBytes);
 
-        String uuid = hexString.substring(0, 8) + "-"
-                + hexString.substring(8, 12) + "-"
-                + hexString.substring(12, 16) + "-"
-                + hexString.substring(16, 20) + "-"
-                + hexString.substring(20, 32);
+        String uuid = hexString.substring( 0,  8) + "-"
+                    + hexString.substring( 8, 12) + "-"
+                    + hexString.substring(12, 16) + "-"
+                    + hexString.substring(16, 20) + "-"
+                    + hexString.substring(20, 32);
 
+        int major = (scanRecord[startByte + 20] & 0xff)
+                * 0x100 + (scanRecord[startByte + 21] & 0xff);
 
-        int major = (scanRecord[startByte + 20] & 0xff) * 0x100
-                + (scanRecord[startByte + 21] & 0xff);
+        int minor = (scanRecord[startByte + 22] & 0xff)
+                * 0x100 + (scanRecord[startByte + 23] & 0xff);
 
-
-        int minor = (scanRecord[startByte + 22] & 0xff) * 0x100
-                + (scanRecord[startByte + 23] & 0xff);
-
-        String ibeaconName = device.getName();
-        String mac = device.getAddress();
         int txPower = (scanRecord[startByte + 24]);
+        String mac = device.getAddress();
 
         Beacon beacon = new Beacon(major+""+minor, uuid,mac,major+"",minor+"",rssi,txPower);
 
@@ -262,8 +187,7 @@ public class Tools extends  Activity {
 
     }
 
-    private static String bytesToHex(byte[] bytes)
-    {
+    private static String bytesToHex(byte[] bytes) {
         char[] hexChars = new char[bytes.length * 2];
         for (int j = 0; j < bytes.length; j++)
         {
@@ -275,23 +199,10 @@ public class Tools extends  Activity {
     }
 
     public static Beacon getSensorByMajorandMinor(String major ,String minor){
-        Beacon max_sensor=null;
-        Iterator<String> keyite =  GlobalData.beaconlist.keySet().iterator();
-        while (keyite.hasNext())
-        {
-            String key = keyite.next();
-            Beacon sensor = GlobalData.beaconlist.get(key);
-            if (sensor.major.equals(major)&&sensor.minor.equals(minor))
-            {
-                max_sensor = sensor;
-            }
-        }
-        return  max_sensor;
+        return  GlobalData.beaconlist.get(major+minor);
     }
 
-
-    public static Beacon getMaxRssiSensor(Hashtable<String, Beacon> list)
-    {
+    public static Beacon getMaxRssiSensor(Hashtable<String, Beacon> list) {
         Beacon max_sensor=null;
         int max_rssi=-10000;
 
@@ -307,6 +218,24 @@ public class Tools extends  Activity {
             }
         }
         return  max_sensor;
+    }
+
+    public static void insertBeacon(Beacon sensor,Context context) {
+        DatabaseContext dbContext = new DatabaseContext(context);
+        SQLiteHelper helper = new SQLiteHelper(dbContext,"BLEdevice.db");
+        helper.insert(sensor);
+    }
+
+    public static void updateBeacon(Beacon sensor,Context context) {
+        DatabaseContext dbContext = new DatabaseContext(context);
+        SQLiteHelper helper = new SQLiteHelper(dbContext,"BLEdevice.db");
+        helper.update(sensor);
+    }
+
+    public static void deleteBeacon(Beacon sensor,Context context) {
+        DatabaseContext dbContext = new DatabaseContext(context);
+        SQLiteHelper helper = new SQLiteHelper(dbContext,"BLEdevice.db");
+        helper.delete(sensor);
     }
 
 }

@@ -8,10 +8,11 @@ import com.iot.locallization_ibeacon.tools.Tools;
 /**
  * Created by zhujianjie on 3/6/2015.
  */
-public class CallBack implements BluetoothAdapter.LeScanCallback {
+public class BLEScanCallBack implements BluetoothAdapter.LeScanCallback {
     @Override
     public void onLeScan( BluetoothDevice device, int rssi,  byte[] scanRecord){
         Beacon beacon = Tools.dealScan(device, rssi, scanRecord);
+
         BeaconConsumer.consumeBeacon(beacon);
     }
 }

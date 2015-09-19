@@ -73,7 +73,8 @@ public class InitBeaconPositionActivity extends ActionBarActivity {
         return "major:" +  ma + " minor:" +  mi;
     }
 
-    Handler Loghandler = new Handler() {
+    Handler Loghandler = new Handler()
+    {
         @Override
         public void handleMessage(Message msg) {
             if (msg.arg1 == 1){
@@ -108,52 +109,7 @@ public class InitBeaconPositionActivity extends ActionBarActivity {
         }
     };
 
-private void changeImage(){
 
-
-
-    BitmapDescriptor img =null;
-    switch(floor)
-    {
-        case 1:
-            img=BitmapDescriptorFactory.fromResource(R.drawable.k11);
-            break;
-        case 2:
-            img=BitmapDescriptorFactory.fromResource(R.drawable.k22);
-            break;
-        case 3:
-            img=BitmapDescriptorFactory.fromResource(R.drawable.k33);
-            break;
-        case 4:
-            img=BitmapDescriptorFactory.fromResource(R.drawable.k44);
-            break;
-        default:
-            return;
-
-    }
-    map.clear();
-    if (image != null){
-
-        image = map.addGroundOverlay(new GroundOverlayOptions()
-                .image(img).anchor(0, 0).bearing(-45f)
-                .position(GlobalData.ancer, GlobalData.hw[0], GlobalData.hw[1]));
-    }
-
-    Iterator<String> key_ite = markerList.keySet().iterator();
-
-    while(key_ite.hasNext()){
-        Beacon sensor = markerList.get(key_ite.next());
-        if (sensor.floor ==floor){
-
-            map.addMarker(sensor.markerOptions);
-        }
-
-
-    }
-
-
-
-}
     private void initButton(){
 
         Button delete = (Button)findViewById(R.id.BT_DELETE);
@@ -185,12 +141,10 @@ private void changeImage(){
             @Override
             public void onClick(View v) {
                 if (marker !=null){
+                    Tools.deleteBeacon(markerList.get(marker.getTitle()),InitBeaconPositionActivity.this);
                     markerList.remove(marker.getTitle());
                     marker.remove();
                 }
-
-                saveConfig(InitBeaconPositionActivity.this);
-
             }
         });
 
@@ -201,39 +155,44 @@ private void changeImage(){
 
                 TextView log = (TextView) findViewById(R.id.TV_Log1);
                 if (marker != null && curr_or_max == false) {
+                    //把选定的beacon更新其信号最强值
+
                     Beacon sensor = GlobalData.beaconlist.get(marker.getTitle());
-                    Beacon curr_sensor = Tools.getSensorByMajorandMinor(sensor.major, sensor.minor);
-                    if (curr_sensor == null)
-                        return;
-                    log.setText("major:" + curr_sensor.major + " minor:" + curr_sensor.minor + " rssi:" + curr_sensor.rssi);
-                    GlobalData.beaconlist.remove(sensor.ID);
-                    sensor.major = curr_sensor.major;
-                    sensor.minor = curr_sensor.minor;
-                    sensor.max_rssi = curr_sensor.rssi;
-                    sensor.ID = "major:" + sensor.major + " minor:" + sensor.minor;
-                    sensor.markerOptions.title(sensor.ID);
-                    sensor.markerOptions.snippet("x:" + Tools.formatFloat(sensor.position.latitude) + " y:" + Tools.formatFloat(sensor.position.longitude) + "\n"
+                    sensor.max_rssi = sensor.rssi;
+                    sensor.markerOptions.snippet("x:" + Tools.formatFloat(sensor.position.latitude)
+                            + " y:" + Tools.formatFloat(sensor.position.longitude) + "\n"
                             + "max_rssi:" + sensor.max_rssi);
-                    sensor.floor = floor;
                     marker.remove();
                     marker = map.addMarker(sensor.markerOptions);
                     marker.showInfoWindow();
 
-                    GlobalData.beaconlist.put(sensor.ID, sensor);
+                    Tools.updateBeacon(sensor,InitBeaconPositionActivity.this);
 
-                } else if (marker != null && curr_or_max == true) {
+                }
+                else if (marker != null && curr_or_max == true) {
+                    //把选定的beacon更新为信号最强的beacon
                     Beacon sensor = GlobalData.beaconlist.get(marker.getTitle());
+
                     Beacon max_sensor = Tools.getMaxRssiSensor(GlobalData.templist);
                     if (max_sensor == null) {
                         return;
                     }
 
                     log.setText("major:" + max_sensor.major + " minor:" + max_sensor.minor + " rssi:" + max_sensor.rssi);
+
                     GlobalData.beaconlist.remove(sensor.ID);
+                    Tools.deleteBeacon(sensor, InitBeaconPositionActivity.this);
+
+                    sensor.ID =  max_sensor.major + max_sensor.minor;
                     sensor.major = max_sensor.major;
                     sensor.minor = max_sensor.minor;
+                    sensor.UUID = max_sensor.UUID;
                     sensor.max_rssi = max_sensor.rssi;
-                    sensor.ID = "major:" + sensor.major + " minor:" + sensor.minor;
+                    sensor.markerOptions.title(sensor.ID);
+
+                    Tools.insertBeacon(sensor,InitBeaconPositionActivity.this);
+                    GlobalData.beaconlist.put(sensor.ID, sensor);
+
                     sensor.markerOptions.title(sensor.ID);
                     sensor.markerOptions.snippet("x:" + Tools.formatFloat(sensor.position.latitude) + " y:" + Tools.formatFloat(sensor.position.longitude) + "\n"
                             + "max_rssi:" + sensor.max_rssi);
@@ -242,9 +201,7 @@ private void changeImage(){
                     marker = map.addMarker(sensor.markerOptions);
                     marker.showInfoWindow();
 
-                    GlobalData.beaconlist.put(sensor.ID, sensor);
                 }
-                saveConfig( InitBeaconPositionActivity.this);
 
             }
         });
@@ -267,20 +224,6 @@ private void changeImage(){
 
     }
 
-    public void saveConfig(Context context)
-    {
-        GlobalData.beaconlist =markerList;
-        File file = new File(Tools.path);
-        if (file.exists()) {
-            file.delete();
-        }
-        Iterator<String> ite = markerList.keySet().iterator();
-        while (ite.hasNext()) {
-            Tools.AppendToConfigFile(markerList.get(ite.next()));
-        }
-
-        Tools.ReadConfigFile(context);
-    }
     private void initMap(){
         map=((MapFragment)getFragmentManager().findFragmentById(R.id.map)).getMap();
        // map.setMapType(GoogleMap.MAP_TYPE_SATELLITE);
@@ -297,7 +240,8 @@ private void changeImage(){
             public boolean onMarkerClick(Marker marker)
             {
                 InitBeaconPositionActivity.this.marker = marker;
-                marker.setSnippet("x:" + Tools.formatFloat(marker.getPosition().latitude) + " y:" + Tools.formatFloat(marker.getPosition().longitude)
+                marker.setSnippet("x:" + Tools.formatFloat(marker.getPosition().latitude)
+                        + " y:" + Tools.formatFloat(marker.getPosition().longitude)
                         + "\n max_rssi:" + markerList.get(marker.getTitle()).max_rssi);
                 markerList.get(marker.getTitle()).markerOptions.position(marker.getPosition());
                 markerList.get(marker.getTitle()).position = marker.getPosition();
@@ -343,7 +287,8 @@ private void changeImage(){
             @Override
             public void onMarkerDragEnd(Marker marker) {
 
-                marker.setSnippet("x:" + Tools.formatFloat(marker.getPosition().latitude) + " y:" + Tools.formatFloat(marker.getPosition().longitude)
+                marker.setSnippet("x:" + Tools.formatFloat(marker.getPosition().latitude)
+                        + " y:" + Tools.formatFloat(marker.getPosition().longitude)
                         + "\n max_rssi:" + markerList.get(marker.getTitle()).max_rssi);
                 markerList.get(marker.getTitle()).markerOptions.position(marker.getPosition());
                 markerList.get(marker.getTitle()).position = marker.getPosition();
@@ -356,26 +301,68 @@ private void changeImage(){
                         .image(BitmapDescriptorFactory.fromResource(R.drawable.k44)).anchor(0,0).bearing(-45f)
                         .position(GlobalData.ancer, GlobalData.hw[0], GlobalData.hw[1]));
 
-        File file = new File(Tools.path);
-        if(file.exists())
+
+        Tools.ReadConfigFile(InitBeaconPositionActivity.this);
+        markerList=  GlobalData.beaconlist;
+
+        Iterator<String> ita= markerList.keySet().iterator();
+        while(ita.hasNext())
         {
-            Tools.ReadConfigFile(InitBeaconPositionActivity.this);
-            markerList=  GlobalData.beaconlist;
-
-            Iterator<String> ita= markerList.keySet().iterator();
-            while(ita.hasNext())
+            Beacon sensor = markerList.get(ita.next());
+            if (sensor.floor == floor)
             {
-                Beacon sensor = markerList.get(ita.next());
-                if (sensor.floor == floor)
-                {
-                    map.addMarker(sensor.markerOptions);
-                }
-
+                map.addMarker(sensor.markerOptions);
             }
+
         }
+
 
         CameraUpdate update = CameraUpdateFactory.newLatLngZoom(GlobalData.ancer, 22);
         map.moveCamera(update);
+    }
+    private void changeImage(){
+
+
+
+        BitmapDescriptor img =null;
+        switch(floor)
+        {
+            case 1:
+                img=BitmapDescriptorFactory.fromResource(R.drawable.k11);
+                break;
+            case 2:
+                img=BitmapDescriptorFactory.fromResource(R.drawable.k22);
+                break;
+            case 3:
+                img=BitmapDescriptorFactory.fromResource(R.drawable.k33);
+                break;
+            case 4:
+                img=BitmapDescriptorFactory.fromResource(R.drawable.k44);
+                break;
+            default:
+                return;
+
+        }
+        map.clear();
+        if (image != null){
+
+            image = map.addGroundOverlay(new GroundOverlayOptions()
+                    .image(img).anchor(0, 0).bearing(-45f)
+                    .position(GlobalData.ancer, GlobalData.hw[0], GlobalData.hw[1]));
+        }
+
+        Iterator<String> key_ite = markerList.keySet().iterator();
+
+        while(key_ite.hasNext()){
+            Beacon sensor = markerList.get(key_ite.next());
+            if (sensor.floor ==floor){
+
+                map.addMarker(sensor.markerOptions);
+            }
+
+
+        }
+
     }
 }
 

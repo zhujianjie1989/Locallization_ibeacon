@@ -46,8 +46,10 @@ import java.util.List;
 public class DemoActivity extends Activity {
     private GoogleMap map;
     private Marker currmark=null;
-    private boolean scan_flag= false;
+
     private GroundOverlay buildingMapImage =null;
+    private Location currentLocation =null;
+    private LocationManager locationManager;
     private WPL_Limit_BlutoothLocationAlgorithm location =new WPL_Limit_BlutoothLocationAlgorithm();
 
     @Override
@@ -60,8 +62,10 @@ public class DemoActivity extends Activity {
         initButton();
     }
 
-    private void changeBuildingMap()
-    {
+    /**
+     * 改变楼层地图
+     */
+    private void changeBuildingMap() {
         BitmapDescriptor img =null;
         Log.e("changeBuildingMap", " floor = " + GlobalData.curr_floor);
         switch(GlobalData.curr_floor)
@@ -87,12 +91,14 @@ public class DemoActivity extends Activity {
                 .position(GlobalData.ancer, GlobalData.hw[0], GlobalData.hw[1]));
     }
 
-    private void updateMap()
-    {
+    /**
+     * 更新地图
+     */
+    private void updateMap() {
         Date date = new Date();
         if (Math.abs(date.getTime() - GlobalData.IPS_UpdateTime.getTime()) >  6000)
         {
-            openGPSSettings();
+            openGPS();
             return;
         }
 
@@ -104,23 +110,13 @@ public class DemoActivity extends Activity {
         location.setHandler(updatelog);
         location.DoLocalization();
         updateLocation(GlobalData.currentPosition);
-        EditText setCounter = (EditText)findViewById(R.id.ET_SETCOUNT);
-        int setcounter = Integer.parseInt(setCounter.getText().toString());
-        if (!startflag || Counter >= setcounter){
-            startflag = false;
-            return;
-        }
-        Node node  = new Node(ID,Counter,GlobalData.currentPosition);
-        list.add(node);
-
-        Counter++;
-        TextView TV_Counter = (TextView)findViewById(R.id.TV_Counter);
-        TV_Counter.setText(Counter + "");
-
-        TextView tx = (TextView)findViewById(R.id.textView5);
-        tx.setText(node.toString());
 
     }
+
+    /**
+     * 更新位置
+     * @param location
+     */
     public void updateLocation(LatLng location){
         if (currmark!= null)
         {
@@ -128,15 +124,15 @@ public class DemoActivity extends Activity {
         }
         currmark=map.addMarker(new MarkerOptions().position(location));
 
-
-
-
        // currmark=map.addMarker(new MarkerOptions().position(GlobalData.currentPosition));
     }
 
-    private Location currentLocation =null;
-    LocationManager locationManager;
-    private void openGPSSettings() {
+
+
+    /**
+     * 初始化GPS设置
+     */
+    private void openGPS() {
 
         LocationManager alm = (LocationManager) this.getSystemService(Context.LOCATION_SERVICE);
         if (alm.isProviderEnabled(android.location.LocationManager.GPS_PROVIDER)) {
@@ -155,56 +151,10 @@ public class DemoActivity extends Activity {
 
     }
 
-    LocationListener GPSlistener =  new LocationListener() {
-        @Override
-        public void onLocationChanged(Location location) {
-
-            if(currentLocation!=null){
-                if(Tools.isBetterLocation(location, currentLocation)){
-                    Log.v("GPSTEST", "It's a better location");
-                    currentLocation=location;
-                    updateLocation(new LatLng(location.getLatitude(), location.getLongitude()));
-                }
-                else{
-                    Log.v("GPSTEST", "Not very good!");
-                }
-            }
-            else if(location.getAccuracy() < 5)
-            {
-                Log.v("GPSTEST", "It's first location");
-                currentLocation=location;
-                updateLocation(new LatLng(location.getLatitude(), location.getLongitude()));
-            }
-
-                /*    if (Tools.CalDistatce(new LatLng(location.getLatitude(), location.getLongitude()), GlobalData.currentPosition) > 15) {
-                       return;
-                    }
-                    updateLocation(new LatLng(location.getLatitude(), location.getLongitude()));*/
-                   /* CameraUpdate update = CameraUpdateFactory.newLatLngZoom(new LatLng(location.getLatitude(), location.getLongitude()), 18);
-                    map.animateCamera(update);*/
-
-
-        }
-
-        @Override
-        public void onStatusChanged(String provider, int status, Bundle extras) {
-
-        }
-
-        @Override
-        public void onProviderEnabled(String provider) {
-
-        }
-
-        @Override
-        public void onProviderDisabled(String provider) {
-
-        }
-    };
-
-
-    private void  initMap()
-    {
+    /**
+     * 初始化地图
+     */
+    private void  initMap() {
 
         map=((MapFragment)getFragmentManager().findFragmentById(R.id.map)).getMap();
         map.setIndoorEnabled(true);
@@ -228,6 +178,78 @@ public class DemoActivity extends Activity {
         updateHandler.postDelayed(updateMap, 1000);
     }
 
+    /**
+     * 初始化按钮监听事件
+     */
+    public void initButton(){
+        Button start = (Button)findViewById(R.id.BT_START);
+        start.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                ID++;
+                Counter = 0;
+                startflag=true;
+
+            }
+        });
+
+        Button seve = (Button)findViewById(R.id.BT_SAVE);
+        seve.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                try {
+                    writeData();
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+                list.clear();
+            }
+        });
+    }
+
+    LocationListener GPSlistener =  new LocationListener() {
+        @Override
+        public void onLocationChanged(Location location) {
+
+            if(currentLocation!=null){
+                if(Tools.isBetterLocation(location, currentLocation)){
+                    Log.v("GPSTEST", "It's a better location");
+                    currentLocation=location;
+                    updateLocation(new LatLng(location.getLatitude(), location.getLongitude()));
+                }
+                else{
+                    Log.v("GPSTEST", "Not very good!");
+                }
+            }
+            else if(location.getAccuracy() < 5)
+            {
+                Log.v("GPSTEST", "It's first location");
+                currentLocation=location;
+                updateLocation(new LatLng(location.getLatitude(), location.getLongitude()));
+            }
+
+        }
+
+        @Override
+        public void onStatusChanged(String provider, int status, Bundle extras) {
+
+        }
+
+        @Override
+        public void onProviderEnabled(String provider) {
+
+        }
+
+        @Override
+        public void onProviderDisabled(String provider) {
+
+        }
+    };
+
+    private int Counter = 0;
+    private int ID = 0;
+    private List<Node> list = new ArrayList();
+    private boolean startflag= false;
 
     private Runnable updateMap = new Runnable()
     {
@@ -269,37 +291,6 @@ public class DemoActivity extends Activity {
 
         }
     };
-
-    public void initButton(){
-        Button start = (Button)findViewById(R.id.BT_START);
-        start.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                ID++;
-                Counter = 0;
-                startflag=true;
-
-            }
-        });
-
-        Button seve = (Button)findViewById(R.id.BT_SAVE);
-        seve.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                try {
-                    writeData();
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
-                list.clear();
-            }
-        });
-    }
-
-    private int Counter = 0;
-    private int ID = 0;
-    private List<Node> list = new ArrayList<Node>();
-    private boolean startflag= false;
 
     private void writeData() throws Exception {
         Date date = new Date();

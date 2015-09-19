@@ -18,8 +18,8 @@ public class BeaconConsumer
             GlobalData.loghandler.sendMessage(msg);
         }
 
-        Log.e("lescon", beacon.major + "  " + beacon.minor + "  " +beacon. rssi + " floor : " + GlobalData.curr_floor);
-        Log.e("lescon", "GlobalData.beaconlist.size = " +GlobalData.beaconlist.size()+" beacon.ID = "+beacon.ID);
+        // Log.e("lescon", beacon.major + "  " + beacon.minor + "  " +beacon. rssi + " floor : " + GlobalData.curr_floor);
+        //Log.e("lescon", "GlobalData.beaconlist.size = " +GlobalData.beaconlist.size()+" beacon.ID = "+beacon.ID);
         if (GlobalData.beaconlist.containsKey(beacon.ID))
         {
             Log.e("lescon", beacon.major + "  " + beacon.minor + "  " + beacon.rssi + " floor : "+ GlobalData.curr_floor );
