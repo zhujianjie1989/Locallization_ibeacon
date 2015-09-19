@@ -17,12 +17,13 @@ public class Beacon {
 	public Integer floor=0;
 	public LatLng position ;
 	public long updateTime;
+	public int type=0;
 	public MarkerOptions markerOptions = new MarkerOptions();
 
 
 	private final  int length =2 ;
-	public int[] rssis = new int[length];
-	public int pos = 0;
+	private int[] rssis = new int[length];
+	private int pos = 0;
 
 	public Beacon(){
 
@@ -32,8 +33,8 @@ public class Beacon {
 		}
 	}
 
-	public Beacon(String Name, String UUID, String Mac, String Major, String Minor, int Rssi, int TxPower){
-		this.Name= Name;
+	public Beacon(String ID, String UUID, String Mac, String Major, String Minor, int Rssi, int TxPower){
+		this.ID= ID;
 		this.UUID= UUID;
 		this.mac=Mac;
 		this.major  =Major;

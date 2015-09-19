@@ -1,5 +1,6 @@
 package com.iot.locallization_ibeacon.activity;
 
+import android.content.Context;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
@@ -188,7 +189,7 @@ private void changeImage(){
                     marker.remove();
                 }
 
-                saveConfig();
+                saveConfig(InitBeaconPositionActivity.this);
 
             }
         });
@@ -243,7 +244,7 @@ private void changeImage(){
 
                     GlobalData.beaconlist.put(sensor.ID, sensor);
                 }
-                saveConfig();
+                saveConfig( InitBeaconPositionActivity.this);
 
             }
         });
@@ -266,7 +267,7 @@ private void changeImage(){
 
     }
 
-    public void saveConfig()
+    public void saveConfig(Context context)
     {
         GlobalData.beaconlist =markerList;
         File file = new File(Tools.path);
@@ -278,7 +279,7 @@ private void changeImage(){
             Tools.AppendToConfigFile(markerList.get(ite.next()));
         }
 
-        Tools.ReadConfigFile();
+        Tools.ReadConfigFile(context);
     }
     private void initMap(){
         map=((MapFragment)getFragmentManager().findFragmentById(R.id.map)).getMap();
@@ -358,7 +359,7 @@ private void changeImage(){
         File file = new File(Tools.path);
         if(file.exists())
         {
-            Tools.ReadConfigFile();
+            Tools.ReadConfigFile(InitBeaconPositionActivity.this);
             markerList=  GlobalData.beaconlist;
 
             Iterator<String> ita= markerList.keySet().iterator();

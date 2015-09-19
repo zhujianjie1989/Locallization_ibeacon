@@ -2,6 +2,7 @@ package com.iot.locallization_ibeacon.tools;
 
 import android.app.Activity;
 import android.bluetooth.BluetoothDevice;
+import android.content.Context;
 import android.location.Location;
 import android.util.Log;
 
@@ -14,8 +15,10 @@ import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.text.DecimalFormat;
+import java.util.ArrayList;
 import java.util.Hashtable;
 import java.util.Iterator;
+import java.util.List;
 
 public class Tools extends  Activity {
 
@@ -131,8 +134,20 @@ public class Tools extends  Activity {
         return provider1.equals(provider2);
     }
 
-    public static void ReadConfigFile()
+    public static void ReadConfigFile(Context context)
     {
+        DatabaseContext dbContext = new DatabaseContext(context);
+        SQLiteHelper helper = new SQLiteHelper(dbContext,"BLEdevice.db");
+        List<Beacon> beacons = helper.selectAll();
+        for (Beacon beacon:beacons) {
+            GlobalData.beaconlist.put(beacon.ID,beacon);
+        }
+
+    }
+
+    public static List<Beacon> ReadConfigFile2()
+    {
+        List<Beacon> beacons = new ArrayList<Beacon>();
         try
         {
             BufferedReader br = new BufferedReader(new FileReader(path));
@@ -141,7 +156,7 @@ public class Tools extends  Activity {
             while( data!=null) {
                 Beacon sensor = new Beacon();
                 String[] info = data.split(",");
-               // sensor.mac = info[0];
+                // sensor.mac = info[0];
                 sensor.ID = info[0];
                 sensor.major= info[1];
                 sensor.minor= info[2];
@@ -149,31 +164,22 @@ public class Tools extends  Activity {
                 sensor.floor =Integer.parseInt(info[5]);
                 sensor.max_rssi = Integer.parseInt(info[6]);
 
-               /* if(info.length > 7){
-                    String[] lines = info[7].split("N");
-                    Log.e("debug",info[7]+"    "+lines.length);
-                    for (int i = 0; i < lines.length; i++){
-                        String[] line = lines[i].split("M");
-                        String major = line[0];
-                        String minor = line[1];
-                        sensor.lines.add(new Line(major,minor,0));
-
-                    }
-                }*/
-
                 sensor.markerOptions.title(sensor.ID).draggable(true);
                 sensor.markerOptions.position(sensor.position);
                 sensor.markerOptions.snippet("x:" + sensor.position.latitude + "y:" + sensor.position.latitude + "\n max_rssi:" + sensor.max_rssi);
-                GlobalData.beaconlist.put(sensor.ID, sensor);
-                Log.e("ReadConfigFile", sensor.toString());
+                //GlobalData.beaconlist.put(sensor.ID, sensor);
+                beacons.add(sensor);
+                Log.e("ReadConfigFile ", sensor.toString());
                 data = br.readLine();
             }
             br.close();
         }
         catch (IOException e)
         {
-                e.printStackTrace();
+            e.printStackTrace();
         }
+
+        return  beacons;
 
     }
 
@@ -250,7 +256,7 @@ public class Tools extends  Activity {
         String mac = device.getAddress();
         int txPower = (scanRecord[startByte + 24]);
 
-        Beacon beacon = new Beacon(ibeaconName, uuid,mac,major+"",minor+"",rssi,txPower);
+        Beacon beacon = new Beacon(major+""+minor, uuid,mac,major+"",minor+"",rssi,txPower);
 
         return  beacon;
 

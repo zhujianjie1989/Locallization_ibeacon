@@ -46,12 +46,12 @@ public class ScanBluetoothService extends Service {
                 if (on_off)
                 {
                     bluetoothAdapter.startLeScan(leScanCallback);
-                    Log.e("mBluetoothAdapter","startLeScan");
+                    //Log.e("mBluetoothAdapter","startLeScan");
                 }
                 else
                 {
                     bluetoothAdapter.stopLeScan(leScanCallback);
-                    Log.e("mBluetoothAdapter", "stopLeScan");
+                    //Log.e("mBluetoothAdapter", "stopLeScan");
                 }
             }
         };
@@ -95,7 +95,7 @@ public class ScanBluetoothService extends Service {
             }
         };
         timer = new Timer();
-        timer.schedule(task, 1000, 800);
+        timer.schedule(task, 1000, 500);
     }
 
     public static  void stopTimer()

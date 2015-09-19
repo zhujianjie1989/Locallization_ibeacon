@@ -10,6 +10,8 @@ import android.widget.Button;
 import com.iot.locallization_ibeacon.R;
 import com.iot.locallization_ibeacon.pojo.ScanServiceConnection;
 import com.iot.locallization_ibeacon.service.ScanBluetoothService;
+import com.iot.locallization_ibeacon.tools.DatabaseContext;
+import com.iot.locallization_ibeacon.tools.SQLiteHelper;
 import com.iot.locallization_ibeacon.tools.Tools;
 
 import java.io.File;
@@ -34,7 +36,7 @@ public class MainActivity extends Activity {
         File file = new File(Tools.path);
         if(file.exists())
         {
-            Tools.ReadConfigFile();
+            Tools.ReadConfigFile(MainActivity.this);
         }
     }
 
@@ -58,6 +60,7 @@ public class MainActivity extends Activity {
     {
         Button Get_Lanlng = (Button) findViewById(R.id.BT_Get_Lanlng);
         Button Demo = (Button) findViewById(R.id.BT_Demo);
+        Button initDataBase = (Button) findViewById(R.id.BT_InitDatabase);
 
         Get_Lanlng.setOnClickListener(new View.OnClickListener()
         {
@@ -76,6 +79,15 @@ public class MainActivity extends Activity {
             {
                 Intent intent = new Intent(MainActivity.this, DemoActivity.class);
                 startActivity(intent);
+            }
+        });
+
+        initDataBase.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                DatabaseContext dbContext = new DatabaseContext(MainActivity.this);
+                SQLiteHelper helper = new SQLiteHelper(dbContext,"BLEdevice.db");
+                helper.selectAll();
             }
         });
 

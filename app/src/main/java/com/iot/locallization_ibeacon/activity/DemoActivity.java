@@ -150,7 +150,7 @@ public class DemoActivity extends Activity {
 
         Toast.makeText(this, "GPS dont open", Toast.LENGTH_SHORT).show();
         Intent intent = new Intent(Settings.ACTION_SECURITY_SETTINGS);
-        startActivityForResult(intent, 0); //��Ϊ������ɺ󷵻ص���ȡ����
+        startActivityForResult(intent, 0);
 
 
     }
@@ -222,7 +222,7 @@ public class DemoActivity extends Activity {
         File file = new File(Tools.path);
         if(file.exists())
         {
-            Tools.ReadConfigFile();
+            Tools.ReadConfigFile(DemoActivity.this);
         }
 
         updateHandler.postDelayed(updateMap, 1000);

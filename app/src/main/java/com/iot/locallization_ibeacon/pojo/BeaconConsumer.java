@@ -18,14 +18,15 @@ public class BeaconConsumer
             GlobalData.loghandler.sendMessage(msg);
         }
 
-        //Log.e("lescon", beacon.major + "  " + beacon.minor + "  " +beacon. rssi + " floor : " + GlabalData.floor);
-        if (GlobalData.beaconlist.containsKey("major:"+beacon.major+" minor:"+beacon.minor))
+        Log.e("lescon", beacon.major + "  " + beacon.minor + "  " +beacon. rssi + " floor : " + GlobalData.curr_floor);
+        Log.e("lescon", "GlobalData.beaconlist.size = " +GlobalData.beaconlist.size()+" beacon.ID = "+beacon.ID);
+        if (GlobalData.beaconlist.containsKey(beacon.ID))
         {
             Log.e("lescon", beacon.major + "  " + beacon.minor + "  " + beacon.rssi + " floor : "+ GlobalData.curr_floor );
 
 
 
-            Beacon sensor = GlobalData.beaconlist.get("major:"+beacon.major+" minor:"+beacon.minor);
+            Beacon sensor = GlobalData.beaconlist.get(beacon.ID);
             sensor.setRssi(beacon.rssi);
             sensor.updateTime = new Date().getTime();
 
@@ -48,14 +49,14 @@ public class BeaconConsumer
             }
         }
 
-        if (GlobalData.templist.containsKey("major:"+beacon.major+" minor:"+beacon.minor))
+        if (GlobalData.templist.containsKey(beacon.ID))
         {
-            Beacon sensor = GlobalData.templist.get("major:"+beacon.major+" minor:"+beacon.minor);
+            Beacon sensor = GlobalData.templist.get(beacon.ID);
             sensor.rssi=beacon.rssi;
         }
         else
         {
-            GlobalData.templist.put("major:" + beacon.major + " minor:" + beacon.minor, beacon);
+            GlobalData.templist.put(beacon.ID, beacon);
         }
     }
 }
