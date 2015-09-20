@@ -9,6 +9,7 @@ import android.util.Log;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.MarkerOptions;
 import com.iot.locallization_ibeacon.pojo.Beacon;
+import com.iot.locallization_ibeacon.pojo.Edge;
 import com.iot.locallization_ibeacon.pojo.GlobalData;
 
 import java.io.BufferedReader;
@@ -17,6 +18,7 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Hashtable;
 import java.util.Iterator;
 import java.util.List;
@@ -85,7 +87,7 @@ public class Tools extends  Activity {
     public static void ReadConfigFile(Context context) {
         DatabaseContext dbContext = new DatabaseContext(context);
         SQLiteHelper helper = new SQLiteHelper(dbContext,"BLEdevice.db");
-        List<Beacon> beacons = helper.selectAll();
+        List<Beacon> beacons = helper.selectAllBeacon();
         for (Beacon beacon:beacons) {
             beacon.markerOptions.position(beacon.position).title(beacon.ID)
                     .snippet("x:" + Tools.formatFloat(beacon.position.latitude)
@@ -95,6 +97,8 @@ public class Tools extends  Activity {
         }
 
     }
+
+
 
     public static List<Beacon> ReadConfigFile2() {
         List<Beacon> beacons = new ArrayList();
@@ -147,7 +151,7 @@ public class Tools extends  Activity {
         String param = "origin=" + src.latitude + "," + src.longitude + "&destination=" +dist.latitude
                 + "," +dist.longitude + "&sensor=false&mode=walking";
         Log.e("dddd", url + param);
-        return  httpOperationUtils .doGet(url+param);
+        return  httpOperationUtils .doGet(url + param);
     }
 
     public static Beacon dealScan(BluetoothDevice device, int rssi, byte[] scanRecord) {
@@ -220,22 +224,86 @@ public class Tools extends  Activity {
         return  max_sensor;
     }
 
+    public static void initDatabase(Context context){
+        DatabaseContext dbContext = new DatabaseContext(context);
+        SQLiteHelper helper = new SQLiteHelper(dbContext,"BLEdevice.db");
+        //helper.selectAllBeacon();
+    }
+
     public static void insertBeacon(Beacon sensor,Context context) {
         DatabaseContext dbContext = new DatabaseContext(context);
         SQLiteHelper helper = new SQLiteHelper(dbContext,"BLEdevice.db");
-        helper.insert(sensor);
+        helper.insertBeacon(sensor);
     }
 
     public static void updateBeacon(Beacon sensor,Context context) {
         DatabaseContext dbContext = new DatabaseContext(context);
         SQLiteHelper helper = new SQLiteHelper(dbContext,"BLEdevice.db");
-        helper.update(sensor);
+        helper.updateBeacon(sensor);
     }
 
     public static void deleteBeacon(Beacon sensor,Context context) {
         DatabaseContext dbContext = new DatabaseContext(context);
         SQLiteHelper helper = new SQLiteHelper(dbContext,"BLEdevice.db");
-        helper.delete(sensor);
+        helper.deleteBeacon(sensor);
+
+        Iterator<String> keyite=   sensor.edges.keySet().iterator();
+        while (keyite.hasNext()){
+            String key = keyite.next();
+            Edge edge = sensor.edges.get(key);
+            edge.polyline.remove();
+            Beacon to = GlobalData.beaconlist.get(edge.ID_To);
+            to.edges.remove(to.ID + sensor.ID);
+        }
+        Tools.cleanEdge(sensor.ID, context);
+        sensor.edges = null;
+        sensor.neighbors = null;
+
+    }
+
+
+
+    public static void insertEdge(Edge edge,Context context) {
+      //  Log.e("insertEdge", "id_from = " + edge.ID_From + " id_to = " + edge.ID_To);
+        DatabaseContext dbContext = new DatabaseContext(context);
+        SQLiteHelper helper = new SQLiteHelper(dbContext,"BLEdevice.db");
+        helper.insertEdge(edge);
+      //  Log.e("insertEdge", "edge cout = " +coutEdge(context));
+    }
+
+    public static void updateEdge(Edge edge,Context context) {
+        DatabaseContext dbContext = new DatabaseContext(context);
+        SQLiteHelper helper = new SQLiteHelper(dbContext,"BLEdevice.db");
+        helper.updateEdge(edge);
+    }
+
+    public static void deleteEdge(Edge edge,Context context) {
+       // Log.w("deleteEdge", "id_from = " + edge.ID_From + " id_to = " + edge.ID_To);
+        DatabaseContext dbContext = new DatabaseContext(context);
+        SQLiteHelper helper = new SQLiteHelper(dbContext,"BLEdevice.db");
+        helper.deleteEdge(edge);
+       // Log.w("deleteEdge", "edge cout = " + coutEdge(context));
+    }
+
+    public static void cleanEdge(String ID,Context context) {
+       // Log.w("cleanEdge", "id  " + ID);
+        DatabaseContext dbContext = new DatabaseContext(context);
+        SQLiteHelper helper = new SQLiteHelper(dbContext,"BLEdevice.db");
+        helper.cleanEdge(ID);
+       // Log.w("cleanEdge", "edge cout = " + coutEdge(context));
+    }
+
+    public static List<Edge> getAllEdge(Context context){
+        DatabaseContext dbContext = new DatabaseContext(context);
+        SQLiteHelper helper = new SQLiteHelper(dbContext,"BLEdevice.db");
+        return  helper.selectAllEdge();
+
+    }
+
+    public static int coutEdge(Context context){
+        DatabaseContext dbContext = new DatabaseContext(context);
+        SQLiteHelper helper = new SQLiteHelper(dbContext,"BLEdevice.db");
+        return helper.selectAllEdge().size();
     }
 
 }

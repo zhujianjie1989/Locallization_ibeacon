@@ -1,0 +1,218 @@
+<?xml version="1.0" encoding="utf-8"?>
+<GridLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent" android:layout_height="match_parent"
+    android:orientation="horizontal">
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:columnCount="8" >
+
+    <RadioGroup
+        android:layout_column="0"
+        android:layout_row="0"
+        android:orientation="horizontal"
+        android:layout_gravity="center_vertical|fill"
+        android:gravity="center"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_columnSpan="2">
+
+        <RadioButton
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="curr"
+            android:id="@+id/RB_Curr"
+            android:checked="false" />
+
+        <RadioButton
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="max"
+            android:id="@+id/RB_Max"
+            android:checked="true" />
+    </RadioGroup>
+
+    <Button
+            android:layout_width="80dp"
+            android:layout_height="wrap_content"
+            android:text="cal"
+            android:id="@+id/BT_Calibreate"
+            android:layout_row="0"
+            android:layout_column="2"
+            android:layout_gravity="fill_horizontal" />
+
+        <Button
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Del"
+            android:id="@+id/BT_DELETE"
+            android:layout_column="3"
+            android:layout_row="0" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textAppearance="?android:attr/textAppearanceMedium"
+        android:text="Floor : "
+        android:id="@+id/textView6"
+        android:layout_row="1"
+        android:layout_column="0"
+        android:layout_gravity="center" />
+
+    <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textAppearance="?android:attr/textAppearanceLarge"
+            android:text="4"
+            android:id="@+id/TV_Floor"
+            android:layout_column="1"
+            android:layout_row="1" />
+
+        <Button
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="+"
+            android:id="@+id/BT_Pluse"
+            android:layout_row="1"
+            android:layout_column="2" />
+
+    <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_column="0"
+            android:layout_row="2"
+            android:layout_columnSpan="6"
+            android:orientation="vertical" >
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Medium Text"
+                android:id="@+id/TV_Log1"
+                android:layout_gravity="fill"
+                android:layout_column="1"
+                android:layout_row="0"
+                android:layout_columnSpan="5"
+                android:singleLine="false"
+                android:autoText="false"
+                android:gravity="fill_vertical" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Medium Text"
+                android:id="@+id/TV_Log2"
+                android:layout_gravity="fill"
+                android:layout_column="1"
+                android:layout_row="0"
+                android:layout_columnSpan="5"
+                android:singleLine="false"
+                android:autoText="false"
+                android:gravity="fill_vertical" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Medium Text"
+                android:id="@+id/TV_Log3"
+                android:layout_gravity="fill"
+                android:layout_column="1"
+                android:layout_row="0"
+                android:layout_columnSpan="5"
+                android:singleLine="false"
+                android:autoText="false"
+                android:gravity="fill_vertical" />
+        </LinearLayout>
+
+        <Button
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="-"
+            android:id="@+id/BT_Sub"
+            android:layout_row="1"
+            android:layout_column="3" />
+
+    <RadioGroup
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_row="3"
+        android:layout_column="0"
+        android:orientation="horizontal"
+        android:layout_columnSpan="3"
+        android:layout_gravity="center">
+
+        <RadioButton
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="normal"
+            android:id="@+id/RB_Normal"
+            android:checked="true"
+            android:layout_gravity="center" />
+
+        <RadioButton
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="add"
+            android:id="@+id/RB_AddLine"
+            android:checked="false"
+            android:layout_gravity="center" />
+
+        <RadioButton
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="delete"
+            android:id="@+id/RB_Delete"
+            android:checked="false"
+            android:layout_gravity="center" />
+    </RadioGroup>
+
+    <Button
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="set"
+            android:id="@+id/BT_SetEdgeMode"
+            android:layout_row="3"
+            android:layout_column="3" />
+
+    <LinearLayout
+        android:orientation="horizontal"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_column="0"
+        android:layout_row="4"
+        android:layout_columnSpan="6">
+
+        <Button
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Indoor"
+            android:id="@+id/BT_Indoor"
+            android:layout_row="4"
+            android:layout_column="0" />
+
+        <Button
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Outdoor"
+            android:id="@+id/BT_Outdoor"
+            android:layout_row="4"
+            android:layout_column="1"
+            android:layout_columnSpan="2" />
+
+        <Button
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="stairs"
+            android:id="@+id/BT_Stairs"
+            android:layout_row="4"
+            android:layout_column="3" />
+
+        <Button
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="elevator"
+            android:id="@+id/BT_Elevator"
+            android:layout_row="4"
+            android:layout_column="6" />
+    </LinearLayout>
+
+</GridLayout>

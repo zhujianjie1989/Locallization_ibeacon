@@ -8,6 +8,7 @@ import android.view.View;
 import android.widget.Button;
 
 import com.iot.locallization_ibeacon.R;
+import com.iot.locallization_ibeacon.pojo.GlobalData;
 import com.iot.locallization_ibeacon.pojo.ScanServiceConnection;
 import com.iot.locallization_ibeacon.service.ScanBluetoothService;
 import com.iot.locallization_ibeacon.tools.DatabaseContext;
@@ -53,7 +54,9 @@ public class MainActivity extends Activity {
         super.onDestroy();
         unbindService(sc);
         ScanBluetoothService.stopTimer();
-        Log.e("localliziton","onDestroy");
+        Log.e("localliziton", "onDestroy");
+        GlobalData.beaconlist=null;
+        GlobalData.templist=null;
     }
 
     private void  init_Button()
@@ -85,9 +88,7 @@ public class MainActivity extends Activity {
         initDataBase.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                DatabaseContext dbContext = new DatabaseContext(MainActivity.this);
-                SQLiteHelper helper = new SQLiteHelper(dbContext,"BLEdevice.db");
-                helper.selectAll();
+               Tools.initDatabase(MainActivity.this);
             }
         });
 

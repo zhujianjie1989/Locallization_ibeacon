@@ -1,6 +1,7 @@
 package com.iot.locallization_ibeacon.activity;
 
 import android.content.Context;
+import android.graphics.Color;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
@@ -18,26 +19,39 @@ import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.MapFragment;
 import com.google.android.gms.maps.model.BitmapDescriptor;
 import com.google.android.gms.maps.model.BitmapDescriptorFactory;
+import com.google.android.gms.maps.model.Circle;
+import com.google.android.gms.maps.model.CircleOptions;
 import com.google.android.gms.maps.model.GroundOverlay;
 import com.google.android.gms.maps.model.GroundOverlayOptions;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
+import com.google.android.gms.maps.model.Polyline;
+import com.google.android.gms.maps.model.PolylineOptions;
 import com.iot.locallization_ibeacon.R;
 import com.iot.locallization_ibeacon.pojo.Beacon;
+import com.iot.locallization_ibeacon.pojo.Edge;
 import com.iot.locallization_ibeacon.pojo.GlobalData;
 import com.iot.locallization_ibeacon.tools.Tools;
 
 import java.io.File;
+import java.util.HashMap;
 import java.util.Hashtable;
 import java.util.Iterator;
+import java.util.List;
+import java.util.Set;
 import java.util.Timer;
 import java.util.TimerTask;
+import java.util.TooManyListenersException;
 
 
 public class InitBeaconPositionActivity extends ActionBarActivity {
     private GoogleMap map;
+
+
+
     private Hashtable<String,Beacon> markerList = new Hashtable<String,Beacon>();
+    public int floor=4;
     private Marker marker;
     private int markID=0;
     private final Timer timer = new Timer();
@@ -45,8 +59,14 @@ public class InitBeaconPositionActivity extends ActionBarActivity {
     private boolean addLine_flag=false;
     private boolean curr_or_max=true;
     private GroundOverlay image=null;
-    public int floor=4;
+    public enum EdgeAction {ADD_LINE,DELETE_LINE,NORMAL};
+    public enum BeaconType {INDOOR,OUTDOOR,STAIRS,ELEVATOR};
 
+    @Override
+    protected void finalize() throws Throwable {
+        super.finalize();
+        markerList = null;
+    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -69,9 +89,6 @@ public class InitBeaconPositionActivity extends ActionBarActivity {
         GlobalData.loghandler = Loghandler;
     }
 
-    public String getID(String ma ,String mi){
-        return "major:" +  ma + " minor:" +  mi;
-    }
 
     Handler Loghandler = new Handler()
     {
@@ -112,22 +129,74 @@ public class InitBeaconPositionActivity extends ActionBarActivity {
 
     private void initButton(){
 
-        Button delete = (Button)findViewById(R.id.BT_DELETE);
-        Button calibrate = (Button)findViewById(R.id.BT_Calibreate);
-        Button pluse = (Button)findViewById(R.id.BT_Pluse);
-        Button sub = (Button)findViewById(R.id.BT_Sub);
+        Button BT_DELETE = (Button)findViewById(R.id.BT_DELETE);
+        Button BT_Calibreate = (Button)findViewById(R.id.BT_Calibreate);
+        Button BT_Pluse = (Button)findViewById(R.id.BT_Pluse);
+        Button BT_Sub = (Button)findViewById(R.id.BT_Sub);
+        RadioButton RB_Curr = (RadioButton)findViewById(R.id.RB_Curr);
+        RadioButton RB_Max = (RadioButton)findViewById(R.id.RB_Max);
+        RadioButton RB_Normal = (RadioButton)findViewById(R.id.RB_Normal);
+        RadioButton RB_AddLine = (RadioButton)findViewById(R.id.RB_AddLine);
+        RadioButton RB_Delete = (RadioButton)findViewById(R.id.RB_Delete);
 
-        pluse.setOnClickListener(new View.OnClickListener() {
+        Button BT_Indoor = (Button)findViewById(R.id.BT_Indoor);
+        Button BT_Outdoor = (Button)findViewById(R.id.BT_Outdoor);
+        Button BT_Stairs = (Button)findViewById(R.id.BT_Stairs);
+        Button BT_Elevator = (Button)findViewById(R.id.BT_Elevator);
+
+        BT_Indoor.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                if (InitBeaconPositionActivity.this.marker!=null)
+                {
+                    Beacon beacon = GlobalData.beaconlist.get(InitBeaconPositionActivity.this.marker.getTitle());
+                    beacon.type = BeaconType.INDOOR.ordinal();
+                    Tools.updateBeacon(beacon,InitBeaconPositionActivity.this);
+                }
+            }
+        });
+        BT_Outdoor.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                if (InitBeaconPositionActivity.this.marker!=null) {
+                    Beacon beacon = GlobalData.beaconlist.get(InitBeaconPositionActivity.this.marker.getTitle());
+                    beacon.type = BeaconType.OUTDOOR.ordinal();
+                    Tools.updateBeacon(beacon, InitBeaconPositionActivity.this);
+                }
+            }
+        });
+        BT_Stairs.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                if (InitBeaconPositionActivity.this.marker!=null) {
+                    Beacon beacon = GlobalData.beaconlist.get(InitBeaconPositionActivity.this.marker.getTitle());
+                    beacon.type = BeaconType.STAIRS.ordinal();
+                    Tools.updateBeacon(beacon, InitBeaconPositionActivity.this);
+                }
+            }
+        });
+        BT_Elevator.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                if (InitBeaconPositionActivity.this.marker!=null) {
+                    Beacon beacon = GlobalData.beaconlist.get(InitBeaconPositionActivity.this.marker.getTitle());
+                    beacon.type = BeaconType.ELEVATOR.ordinal();
+                    Tools.updateBeacon(beacon, InitBeaconPositionActivity.this);
+                }
+            }
+        });
+
+        BT_Pluse.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 floor++;
-                TextView tvfloor = (TextView)findViewById(R.id.TV_Floor);
-                tvfloor.setText(floor+"");
+                TextView tvfloor = (TextView) findViewById(R.id.TV_Floor);
+                tvfloor.setText(floor + "");
                 changeImage();
             }
         });
 
-        sub.setOnClickListener(new View.OnClickListener() {
+        BT_Sub.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 floor--;
@@ -137,21 +206,26 @@ public class InitBeaconPositionActivity extends ActionBarActivity {
             }
         });
 
-        delete.setOnClickListener(new View.OnClickListener() {
+        BT_DELETE.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                if (marker !=null){
-                    Tools.deleteBeacon(markerList.get(marker.getTitle()),InitBeaconPositionActivity.this);
+                if (marker != null) {
+                    Beacon beacon = markerList.get(marker.getTitle());
+                    Tools.deleteBeacon(beacon, InitBeaconPositionActivity.this);
                     markerList.remove(marker.getTitle());
                     marker.remove();
+                    marker=null;
+
+
                 }
             }
         });
 
 
-        calibrate.setOnClickListener(new View.OnClickListener() {
+        BT_Calibreate.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+
 
                 TextView log = (TextView) findViewById(R.id.TV_Log1);
                 if (marker != null && curr_or_max == false) {
@@ -174,7 +248,10 @@ public class InitBeaconPositionActivity extends ActionBarActivity {
                     Beacon sensor = GlobalData.beaconlist.get(marker.getTitle());
 
                     Beacon max_sensor = Tools.getMaxRssiSensor(GlobalData.templist);
-                    if (max_sensor == null) {
+                    if (max_sensor == null
+                            ||(max_sensor!=null
+                                &&!max_sensor.ID.equals(sensor.ID)
+                                &&GlobalData.beaconlist.keySet().contains(max_sensor.ID))) {
                         return;
                     }
 
@@ -189,8 +266,10 @@ public class InitBeaconPositionActivity extends ActionBarActivity {
                     sensor.UUID = max_sensor.UUID;
                     sensor.max_rssi = max_sensor.rssi;
                     sensor.markerOptions.title(sensor.ID);
+                    sensor.edges = new HashMap<String,Edge>();
+                    sensor.neighbors =new HashMap<String,Beacon>();
 
-                    Tools.insertBeacon(sensor,InitBeaconPositionActivity.this);
+                    Tools.insertBeacon(sensor, InitBeaconPositionActivity.this);
                     GlobalData.beaconlist.put(sensor.ID, sensor);
 
                     sensor.markerOptions.title(sensor.ID);
@@ -207,23 +286,59 @@ public class InitBeaconPositionActivity extends ActionBarActivity {
         });
 
 
-        RadioButton curr = (RadioButton)findViewById(R.id.RB_Curr);
-        RadioButton max = (RadioButton)findViewById(R.id.RB_Max);
-        curr.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+
+        RB_Curr.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
             @Override
             public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
-                curr_or_max = false;
+                if (isChecked)
+                {
+                    curr_or_max = false;
+                }
             }
         });
-        max.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+        RB_Max.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
             @Override
             public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
-                curr_or_max = true;
+                if (isChecked)
+                {
+                    curr_or_max = true;
+                }
+            }
+        });
+
+
+        RB_Normal.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+            @Override
+            public void onCheckedChanged(CompoundButton compoundButton, boolean b) {
+                if (b)
+                {
+                    edge_action = EdgeAction.NORMAL;
+                }
+            }
+        });
+        RB_AddLine.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+            @Override
+            public void onCheckedChanged(CompoundButton compoundButton, boolean b) {
+                if (b) {
+                    edge_action = EdgeAction.ADD_LINE;
+                }
+            }
+        });
+        RB_Delete.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+            @Override
+            public void onCheckedChanged(CompoundButton compoundButton, boolean b) {
+                if (b)
+                {
+                    edge_action = EdgeAction.DELETE_LINE;
+                }
             }
         });
 
     }
 
+    private EdgeAction edge_action = EdgeAction.NORMAL;
+    private boolean addEdgeFlag =false;
+    private  Circle circle;
     private void initMap(){
         map=((MapFragment)getFragmentManager().findFragmentById(R.id.map)).getMap();
        // map.setMapType(GoogleMap.MAP_TYPE_SATELLITE);
@@ -231,22 +346,132 @@ public class InitBeaconPositionActivity extends ActionBarActivity {
             @Override
             public void onMapClick(LatLng latLng) {
                 marker = null;
+                if (circle != null)
+                    circle.remove();
                 Log.e("initMap", "onMapClick");
             }
         });
 
         map.setOnMarkerClickListener(new GoogleMap.OnMarkerClickListener() {
             @Override
-            public boolean onMarkerClick(Marker marker)
-            {
-                InitBeaconPositionActivity.this.marker = marker;
-                marker.setSnippet("x:" + Tools.formatFloat(marker.getPosition().latitude)
-                        + " y:" + Tools.formatFloat(marker.getPosition().longitude)
-                        + "\n max_rssi:" + markerList.get(marker.getTitle()).max_rssi);
-                markerList.get(marker.getTitle()).markerOptions.position(marker.getPosition());
-                markerList.get(marker.getTitle()).position = marker.getPosition();
-                return false;
-            }
+            public boolean onMarkerClick(Marker marker) {
+
+                if ( InitBeaconPositionActivity.this.marker!=null
+                        &&marker.getTitle().endsWith( InitBeaconPositionActivity.this.marker.getTitle()))
+                    return false;
+
+
+                Log.e("initMap ", "addEdgeFlag= " + addEdgeFlag);
+                switch (edge_action) {
+                    case NORMAL:
+                        InitBeaconPositionActivity.this.marker = marker;
+                        /*marker.setSnippet("x:" + Tools.formatFloat(marker.getPosition().latitude)
+                                + " y:" + Tools.formatFloat(marker.getPosition().longitude)
+                                + "\n max_rssi:" + markerList.get(marker.getTitle()).max_rssi);*/
+                        marker.setSnippet("nabors count = " +GlobalData.beaconlist.get(marker.getTitle()).neighbors.size()
+                                +" edges  count = "+GlobalData.beaconlist.get(marker.getTitle()).edges.size()
+                                + "type = " + +GlobalData.beaconlist.get(marker.getTitle()).type);
+
+                        markerList.get(marker.getTitle()).markerOptions.position(marker.getPosition());
+                        markerList.get(marker.getTitle()).position = marker.getPosition();
+                        return false;
+
+                    case ADD_LINE:
+                        if (InitBeaconPositionActivity.this.marker != null) {
+                            Log.e("initMap ", "form = " + InitBeaconPositionActivity.this.marker.getPosition().longitude + " " +
+                                    InitBeaconPositionActivity.this.marker.getPosition().latitude
+                                    + marker.getPosition().latitude + " " + marker.getPosition().longitude);
+
+                            PolylineOptions rectOptions = new PolylineOptions()
+                                    .add(marker.getPosition())
+                                    .add(InitBeaconPositionActivity.this.marker.getPosition()).color(Color.RED);
+
+                            Polyline polyline = map.addPolyline(rectOptions);
+                            Edge edge1 = new Edge(InitBeaconPositionActivity.this.marker.getTitle(), marker.getTitle(), polyline);
+                            Edge edge2 = new Edge(marker.getTitle(), InitBeaconPositionActivity.this.marker.getTitle(), polyline);
+
+
+                            Beacon from = GlobalData.beaconlist.get(InitBeaconPositionActivity.this.marker.getTitle());
+                            Beacon to = GlobalData.beaconlist.get(marker.getTitle());
+
+                            if(from.edges.get(edge1.ID)==null){
+                                from.edges.put(edge1.ID, edge1);
+                                from.neighbors.put(to.ID, to);
+                                Tools.insertEdge(edge1, InitBeaconPositionActivity.this);
+                            }else {
+                                polyline.remove();
+                            }
+
+                            if(to.edges.get(edge2.ID)==null){
+                                to.edges.put(edge2.ID, edge2);
+                                to.neighbors.put(from.ID, from);
+                                Tools.insertEdge(edge2, InitBeaconPositionActivity.this);
+                            }else{
+                                polyline.remove();
+                            }
+                            Log.e("insertEdge", "----------------------------------------------");
+
+                        }
+
+                        InitBeaconPositionActivity.this.marker = marker;
+                        if (circle != null)
+                            circle.remove();
+
+                        circle = map.addCircle(new CircleOptions().center(marker.getPosition()).radius(1.5).strokeWidth(15).strokeColor(Color.GREEN));
+                        marker.hideInfoWindow();
+                        return true;
+
+                    case DELETE_LINE:
+                        if (InitBeaconPositionActivity.this.marker != null) {
+                            Log.e("initMap ", "form = " + InitBeaconPositionActivity.this.marker.getPosition().longitude + " " +
+                                    InitBeaconPositionActivity.this.marker.getPosition().latitude
+                                    + marker.getPosition().latitude + " " + marker.getPosition().longitude);
+
+                            Beacon from = GlobalData.beaconlist.get(InitBeaconPositionActivity.this.marker.getTitle());
+                            Beacon to = GlobalData.beaconlist.get(marker.getTitle());
+
+                            if (from!=null)
+                            {
+                                Edge edge1 = GlobalData.beaconlist.get(from.ID).edges.get(from.ID + to.ID);
+                                if (edge1!=null){
+                                    edge1.polyline.remove();
+                                    from.edges.remove(edge1.ID);
+                                    from.neighbors.remove(to.ID);
+                                    Tools.deleteEdge(edge1, InitBeaconPositionActivity.this);
+                                }
+                            }
+
+                            if (to!=null){
+                                Edge edge2 = GlobalData.beaconlist.get(to.ID).edges.get(to.ID + from.ID);
+
+                                if (edge2!=null){
+                                    edge2.polyline.remove();
+                                    to.edges.remove(edge2.ID);
+                                    to.neighbors.remove(from.ID);
+                                    Tools.deleteEdge(edge2, InitBeaconPositionActivity.this);
+                                }
+                            }
+
+
+                            Log.e("deleteEdge", "----------------------------------------------");
+
+
+                        }
+
+                        InitBeaconPositionActivity.this.marker = marker;
+                        if (circle != null)
+                            circle.remove();
+
+                        circle = map.addCircle(new CircleOptions().center(marker.getPosition()).radius(1.5).strokeWidth(15).strokeColor(Color.GREEN));
+                        marker.hideInfoWindow();
+                        return true;
+                    default:
+                        break;
+                    }
+                return  false;
+
+                }
+
         });
         map.setOnMapLongClickListener(new GoogleMap.OnMapLongClickListener() {
             @Override
@@ -254,7 +479,7 @@ public class InitBeaconPositionActivity extends ActionBarActivity {
 
                 Beacon sensor = new Beacon();
                 sensor.markerOptions = new MarkerOptions().position(latLng)
-                        .draggable(true).title(getID("111", markID + ""))
+                        .draggable(true).title("111"+ markID)
                         .snippet("x:" + Tools.formatFloat(latLng.latitude)
                                 + " y:" + Tools.formatFloat(latLng.longitude) + "\n"
                                 + "max_rssi:" + sensor.max_rssi);
@@ -268,6 +493,9 @@ public class InitBeaconPositionActivity extends ActionBarActivity {
 
                 map.addMarker(sensor.markerOptions);
                 markerList.put(sensor.ID, sensor);
+
+                Tools.insertBeacon(sensor,InitBeaconPositionActivity.this);
+
 
 
             }
@@ -315,6 +543,23 @@ public class InitBeaconPositionActivity extends ActionBarActivity {
             }
 
         }
+
+        List<Edge> edges = Tools.getAllEdge(this);
+        for(int index = 0 ; index < edges.size() ; index++){
+            Edge edge = edges.get(index);
+
+
+            Beacon from = GlobalData.beaconlist.get(edge.ID_From);
+            Beacon to = GlobalData.beaconlist.get(edge.ID_To);
+            from.neighbors.put(to.ID,to);
+            from.edges.put(edge.ID,edge);
+
+            edge.polyline = map.addPolyline(new PolylineOptions()
+                    .add(from.position)
+                    .add(to.position).color(Color.RED));
+
+        }
+
 
 
         CameraUpdate update = CameraUpdateFactory.newLatLngZoom(GlobalData.ancer, 22);

@@ -4,13 +4,16 @@ package com.iot.locallization_ibeacon.pojo;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.MarkerOptions;
 
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+
 public class Beacon {
 	public String ID;
 	public String mac="";
 	public Integer rssi=-100;
 	public String major;
 	public String minor;
-	public String Name;
 	public String UUID;
 	public int TxPower;
 	public int max_rssi=-50;
@@ -19,7 +22,8 @@ public class Beacon {
 	public long updateTime;
 	public int type=0;
 	public MarkerOptions markerOptions = new MarkerOptions();
-
+	public HashMap<String,Beacon> neighbors = new HashMap<String,Beacon>();
+	public HashMap<String,Edge> edges = new HashMap<String,Edge>();
 
 	private final  int length =2 ;
 	private int[] rssis = new int[length];
@@ -60,4 +64,10 @@ public class Beacon {
 		return   this.ID+","+this.major+","+this.minor+","+this.rssi+","+this.position.latitude+","+ this.position.longitude+","+this.floor+","+this.max_rssi;
 	}
 
+	@Override
+	protected void finalize() throws Throwable {
+		super.finalize();
+		this.neighbors = null;
+		this.edges = null;
+	}
 }

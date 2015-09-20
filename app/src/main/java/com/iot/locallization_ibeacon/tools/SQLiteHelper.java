@@ -9,9 +9,12 @@ import android.util.Log;
 
 import com.google.android.gms.maps.model.LatLng;
 import com.iot.locallization_ibeacon.pojo.Beacon;
+import com.iot.locallization_ibeacon.pojo.Edge;
 
 import java.util.ArrayList;
 import java.util.List;
+
+import javax.microedition.khronos.egl.EGLDisplay;
 
 /**
  * Created by zhujianjie on 2015/9/19.
@@ -34,6 +37,11 @@ public class SQLiteHelper extends SQLiteOpenHelper {
 
     @Override
     public void onCreate(SQLiteDatabase sqLiteDatabase) {
+        this.createDeviceTable(sqLiteDatabase);
+        this.createEdgeTable(sqLiteDatabase);
+    }
+
+    public void createDeviceTable(SQLiteDatabase sqLiteDatabase){
         sqLiteDatabase.execSQL("create table device(" +
                 "id     varchar(20)," +
                 "major  varchar(20)," +
@@ -58,12 +66,10 @@ public class SQLiteHelper extends SQLiteOpenHelper {
             values.put("type","0");
             sqLiteDatabase.insert("device",null,values);
         }
-
-
     }
 
-    public void insert(Beacon beacon){
-        SQLiteDatabase sqLiteDatabase = this.getReadableDatabase();
+    public void insertBeacon(Beacon beacon){
+        SQLiteDatabase sqLiteDatabase = this.getWritableDatabase();
 
         ContentValues values = new ContentValues();
         values.put("id",beacon.major + beacon.minor);
@@ -76,18 +82,18 @@ public class SQLiteHelper extends SQLiteOpenHelper {
         values.put("rssi",beacon.max_rssi);
         values.put("type", beacon.type + "");
 
-        sqLiteDatabase.insert("device",null,values);
+        sqLiteDatabase.insert("device", null, values);
     }
 
-    public void delete(Beacon beacon){
-        SQLiteDatabase sqLiteDatabase = this.getReadableDatabase();
+    public void deleteBeacon(Beacon beacon){
+        SQLiteDatabase sqLiteDatabase = this.getWritableDatabase();
         String[] args = {beacon.ID};
 
-        sqLiteDatabase.delete("device", "ID=?", args);
+        sqLiteDatabase.delete("device", "id=?", args);
     }
 
-    public void update(Beacon beacon){
-        SQLiteDatabase sqLiteDatabase = this.getReadableDatabase();
+    public void updateBeacon(Beacon beacon){
+        SQLiteDatabase sqLiteDatabase = this.getWritableDatabase();
 
         ContentValues values = new ContentValues();
         values.put("id",beacon.major + beacon.minor);
@@ -101,21 +107,22 @@ public class SQLiteHelper extends SQLiteOpenHelper {
         values.put("type", beacon.type + "");
         String[] args = {beacon.ID};
 
-        sqLiteDatabase.update("device", values, "ID=?", args);
+        sqLiteDatabase.update("device", values, "id=?", args);
     }
 
-    public void findByID(String ID){
+    public void findBeaconByID(String ID){
 
         SQLiteDatabase sqLiteDatabase = this.getReadableDatabase();
         String[] args = {ID};
-        Cursor cursor =  sqLiteDatabase.query("device",null,"ID=?",args,null,null,null,null);
+        Cursor cursor =  sqLiteDatabase.query("device",null,"id=?",args,null,null,null,null);
         while(cursor.moveToNext()){
             Beacon beacon = new Beacon();
             beacon.ID = cursor.getString(0);
             beacon.major = cursor.getString(1);
             beacon.minor  =cursor.getString(2);
-            beacon.position = new LatLng(Double.parseDouble(cursor.getString(4))
-                    ,Double.parseDouble(cursor.getString(5)));
+            beacon.UUID  = cursor.getString(3);
+            beacon.position = new LatLng(Double.parseDouble(cursor.getString(4)),
+                                        Double.parseDouble(cursor.getString(5)));
             beacon.floor= Integer.parseInt(cursor.getString(6));
             beacon.max_rssi  = Integer.parseInt(cursor.getString(7));
             beacon.type  = Integer.parseInt(cursor.getString(8));
@@ -128,7 +135,7 @@ public class SQLiteHelper extends SQLiteOpenHelper {
 
     }
 
-    public List<Beacon> selectAll(){
+    public List<Beacon> selectAllBeacon(){
         List<Beacon> beacons = new ArrayList<Beacon>();
         SQLiteDatabase sqLiteDatabase = this.getReadableDatabase();
         Cursor cursor =  sqLiteDatabase.query("device",null,null,null,null,null,null,null);
@@ -136,7 +143,8 @@ public class SQLiteHelper extends SQLiteOpenHelper {
             Beacon beacon = new Beacon();
             beacon.ID = cursor.getString(0);
             beacon.major = cursor.getString(1);
-            beacon.minor  =cursor.getString(2);
+            beacon.minor = cursor.getString(2);
+            beacon.UUID  = cursor.getString(3);
             beacon.position = new LatLng(Double.parseDouble(cursor.getString(4))
                                         ,Double.parseDouble(cursor.getString(5)));
             beacon.floor= Integer.parseInt(cursor.getString(6));
@@ -151,6 +159,82 @@ public class SQLiteHelper extends SQLiteOpenHelper {
 
         return beacons;
     }
+
+    //====================================================================================================================
+    public void createEdgeTable(SQLiteDatabase sqLiteDatabase){
+        sqLiteDatabase.execSQL("create table edge("
+                + "id  varchar(20),"
+                + "id_from  varchar(20),"
+                + "id_to    varchar(20))");
+    }
+    public void insertEdge(Edge edge){
+        SQLiteDatabase sqLiteDatabase = this.getWritableDatabase();
+
+        ContentValues values = new ContentValues();
+        values.put("id",edge.ID);
+        values.put("id_from",edge.ID_From);
+        values.put("id_to",edge.ID_To);
+
+        sqLiteDatabase.insert("edge", null, values);
+    }
+
+    public void deleteEdge(Edge edge){
+        SQLiteDatabase sqLiteDatabase = this.getWritableDatabase();
+        String[] args = {edge.ID};
+        sqLiteDatabase.delete("edge", "id=?", args);
+    }
+
+    public void cleanEdge(String  ID){
+        SQLiteDatabase sqLiteDatabase = this.getWritableDatabase();
+        String[] args = {ID,ID};
+        sqLiteDatabase.delete("edge", "id_from=? or id_to=?", args);
+    }
+
+    public void updateEdge(Edge edge){
+        SQLiteDatabase sqLiteDatabase = this.getWritableDatabase();
+
+        ContentValues values = new ContentValues();
+        values.put("id",edge.ID);
+        values.put("id_from",edge.ID_From);
+        values.put("id_to",edge.ID_To);
+
+        String[] args = {edge.ID};
+        sqLiteDatabase.update("edge", values, "id=?", args);
+    }
+
+    public List<Edge> findEdgeByID(String ID){
+
+        List<Edge> edges = new ArrayList();
+        SQLiteDatabase sqLiteDatabase = this.getReadableDatabase();
+        String[] args = {ID};
+        Cursor cursor =  sqLiteDatabase.query("edge",null,"id=?",args,null,null,null,null);
+        while(cursor.moveToNext()){
+            Edge edge = new Edge();
+            edge.ID = cursor.getString(0);
+            edge.ID_From = cursor.getString(1);
+            edge.ID_To = cursor.getString(2);
+            edges.add(edge);
+            Log.e("selectAllEdge",cursor.getString(0)+" "+cursor.getString(1)+" "+cursor.getString(2));
+        }
+        return edges;
+    }
+
+    public List<Edge> selectAllEdge(){
+        List<Edge> edges = new ArrayList();
+        SQLiteDatabase sqLiteDatabase = this.getReadableDatabase();
+        Cursor cursor =  sqLiteDatabase.query("edge",null,null,null,null,null,null,null);
+        while(cursor.moveToNext()){
+            Edge edge = new Edge();
+            edge.ID = cursor.getString(0);
+            edge.ID_From = cursor.getString(1);
+            edge.ID_To = cursor.getString(2);
+            edges.add(edge);
+            Log.e("selectAllEdge",cursor.getString(0)+" "+cursor.getString(1)+" "+cursor.getString(2));
+        }
+
+        return edges;
+    }
+
 
     @Override
     public void onUpgrade(SQLiteDatabase sqLiteDatabase, int i, int i1) {
