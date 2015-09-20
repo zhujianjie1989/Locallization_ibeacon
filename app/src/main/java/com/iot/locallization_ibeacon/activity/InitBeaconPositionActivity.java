@@ -101,7 +101,7 @@ public class InitBeaconPositionActivity extends ActionBarActivity {
 
             TextView log1 = (TextView) findViewById( R.id.TV_Log1);
             TextView log2 = (TextView) findViewById( R.id.TV_Log2);
-            if (marker !=null){
+            if (marker !=null&&GlobalData.beaconlist!=null){
                 Beacon sensor =  GlobalData.beaconlist.get(marker.getTitle());
                 if (sensor!=null)
                 {
