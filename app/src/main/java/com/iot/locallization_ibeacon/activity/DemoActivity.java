@@ -13,11 +13,15 @@ import android.os.Message;
 import android.provider.Settings;
 import android.util.Log;
 import android.view.View;
+import android.widget.AdapterView;
+import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.google.android.gms.games.Notifications;
 import com.google.android.gms.maps.CameraUpdate;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
@@ -32,7 +36,9 @@ import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.android.gms.maps.model.PolylineOptions;
 import com.iot.locallization_ibeacon.R;
 import com.iot.locallization_ibeacon.algorithm.WPL_Limit_BlutoothLocationAlgorithm;
+import com.iot.locallization_ibeacon.navigation.Navigation;
 import com.iot.locallization_ibeacon.pojo.Beacon;
+import com.iot.locallization_ibeacon.pojo.Destionation;
 import com.iot.locallization_ibeacon.pojo.Edge;
 import com.iot.locallization_ibeacon.pojo.GlobalData;
 import com.iot.locallization_ibeacon.pojo.Node;
@@ -58,6 +64,8 @@ public class DemoActivity extends Activity {
     private Location currentLocation =null;
     private LocationManager locationManager;
     private WPL_Limit_BlutoothLocationAlgorithm location =new WPL_Limit_BlutoothLocationAlgorithm();
+    Destionation destinaton ;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -73,8 +81,58 @@ public class DemoActivity extends Activity {
         //--------------------------------------------------------------------
 
         changeBuildingMap();    //显示当前楼层地图
+        initUI();
+
     }
 
+
+    private void initUI(){
+        Spinner spiner = (Spinner)findViewById(R.id.spinner);
+
+        Destionation d1 = new Destionation("Chair of EEE", GlobalData.beaconlist.get("1128"));
+        Destionation d2 = new Destionation("Men Toilet", GlobalData.beaconlist.get("1121"));
+        Destionation d3 = new Destionation("Prof Er Office", GlobalData.beaconlist.get("1101"));
+        Destionation d4 = new Destionation("IOT Lab", GlobalData.beaconlist.get("1412"));
+        Destionation d5= new Destionation("Robotic Lab", GlobalData.beaconlist.get("1440"));
+
+        final List<Destionation> destionList = new ArrayList<Destionation>();
+        destionList.add(d1);
+        destionList.add(d2);
+        destionList.add(d3);
+        destionList.add(d4);
+        destionList.add(d5);
+
+        destinaton = destionList.get(0);
+        List<String> dataList = new ArrayList<String>();
+        for (int i = 0 ; i < destionList.size() ; i++){
+            dataList.add(destionList.get(i).name);
+        }
+
+        ArrayAdapter<String> adapter = new ArrayAdapter<String>(this, android.R.layout.simple_dropdown_item_1line,dataList);
+        spiner.setAdapter(adapter);
+        spiner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+            @Override
+            public void onItemSelected(AdapterView<?> adapterView, View view, int i, long l) {
+                Log.e("onItemSelected", destionList.get(i).name);
+                destinaton = destionList.get(i);
+            }
+
+            @Override
+            public void onNothingSelected(AdapterView<?> adapterView) {
+
+            }
+        });
+        Button start = (Button)findViewById(R.id.BT_SatrtNavigation);
+        start.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                Navigation nv = new Navigation();
+                nv.startFindPath(GlobalData.beaconlist.get("146"),GlobalData.beaconlist.get("1421"));
+            }
+        });
+
+
+    }
     /**
      * 改变楼层地图
      */

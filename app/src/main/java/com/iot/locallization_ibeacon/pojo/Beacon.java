@@ -26,6 +26,8 @@ public class Beacon {
 	public HashMap<String,Beacon> neighbors = new HashMap();
 	public HashMap<String,Edge> edges = new HashMap();
 
+	public boolean isVisit = false ;
+
 	private final  int length = 3 ;
 	private int[] rssis = new int[length];
 	private int pos = 0;
