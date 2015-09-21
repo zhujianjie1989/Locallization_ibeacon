@@ -21,11 +21,12 @@ public class Beacon {
 	public LatLng position ;
 	public long updateTime;
 	public int type=0;
+	public int pipeNum=0;
 	public MarkerOptions markerOptions = new MarkerOptions();
-	public HashMap<String,Beacon> neighbors = new HashMap<String,Beacon>();
-	public HashMap<String,Edge> edges = new HashMap<String,Edge>();
+	public HashMap<String,Beacon> neighbors = new HashMap();
+	public HashMap<String,Edge> edges = new HashMap();
 
-	private final  int length =2 ;
+	private final  int length = 3 ;
 	private int[] rssis = new int[length];
 	private int pos = 0;
 
@@ -33,7 +34,7 @@ public class Beacon {
 
 		for (int i = 0 ;i < length;i++)
 		{
-			rssis[i]=-150;
+			rssis[i]=-120;
 		}
 	}
 

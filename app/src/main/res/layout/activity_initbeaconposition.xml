@@ -21,8 +21,8 @@
     </LinearLayout>
 
     <SlidingDrawer
-        android:layout_width="match_parent"
-        android:layout_height="300dp"
+        android:layout_width="wrap_content"
+        android:layout_height="350dp"
         android:content="@+id/content"
         android:handle="@+id/handle"
         android:id="@+id/slidingDrawer"

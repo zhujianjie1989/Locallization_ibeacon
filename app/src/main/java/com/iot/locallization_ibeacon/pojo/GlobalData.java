@@ -15,13 +15,15 @@ public class GlobalData
 	public static  int curr_floor=4;
 	public static Handler loghandler ;
 	public static float[] hw={188,23f};
-	public static LatLng currentPosition ;
+	public static LatLng currentPosition = new LatLng(1.342518999,103.679474999);
 	public static Date IPS_UpdateTime = new Date();
-	public static boolean IPS_flag = true;
+	public static enum BeaconType {OUTDOOR,INDOOR,STAIRS,ELEVATOR};
+	public static enum EdgeAction {ADD_LINE,DELETE_LINE,NORMAL};
 	public static LatLng ancer = new LatLng(1.342518999,103.679474999);
 	private static File sd = Environment.getExternalStorageDirectory();
 	public static String path = sd.getPath() + "sensorInfo.txt";
-	public static Hashtable<String, Beacon> templist = new Hashtable<String, Beacon>();
-	public static Hashtable<String, Beacon> beaconlist = new Hashtable<String, Beacon>();
+	public static Hashtable<String, Beacon> templist = new Hashtable();
+	public static Hashtable<String, Beacon> beaconlist = new Hashtable();
+	public static Hashtable<String, Beacon> scanbeaconlist = new Hashtable();
 
 }

@@ -10,6 +10,7 @@ import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.CompoundButton;
+import android.widget.NumberPicker;
 import android.widget.RadioButton;
 import android.widget.TextView;
 
@@ -34,6 +35,8 @@ import com.iot.locallization_ibeacon.pojo.Edge;
 import com.iot.locallization_ibeacon.pojo.GlobalData;
 import com.iot.locallization_ibeacon.tools.Tools;
 
+import org.w3c.dom.Text;
+
 import java.io.File;
 import java.util.HashMap;
 import java.util.Hashtable;
@@ -54,18 +57,17 @@ public class InitBeaconPositionActivity extends ActionBarActivity {
     public int floor=4;
     private Marker marker;
     private int markID=0;
-    private final Timer timer = new Timer();
+    private  Circle circle;
     private TimerTask task;
-    private boolean addLine_flag=false;
+    private boolean addEdgeFlag =false;
     private boolean curr_or_max=true;
     private GroundOverlay image=null;
-    public enum EdgeAction {ADD_LINE,DELETE_LINE,NORMAL};
-    public enum BeaconType {INDOOR,OUTDOOR,STAIRS,ELEVATOR};
+    private final Timer timer = new Timer();
 
+    private GlobalData.EdgeAction edge_action = GlobalData.EdgeAction.NORMAL;
     @Override
     protected void finalize() throws Throwable {
         super.finalize();
-        markerList = null;
     }
 
     @Override
@@ -143,14 +145,54 @@ public class InitBeaconPositionActivity extends ActionBarActivity {
         Button BT_Outdoor = (Button)findViewById(R.id.BT_Outdoor);
         Button BT_Stairs = (Button)findViewById(R.id.BT_Stairs);
         Button BT_Elevator = (Button)findViewById(R.id.BT_Elevator);
+        Button BT_SetPipe = (Button)findViewById(R.id.BT_SetPipe);
+        Button BT_PipePluse = (Button)findViewById(R.id.BT_PipePluse);
+        Button BT_PipeSub = (Button)findViewById(R.id.BT_PipeSub);
 
+        BT_PipePluse.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                TextView TV_PipeNum = (TextView)findViewById(R.id.TV_PipeNum);
+                int num = Integer.parseInt(TV_PipeNum.getText().toString())+1;
+                TV_PipeNum.setText(""+num);
+            }
+        });
+        BT_PipeSub.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                TextView TV_PipeNum = (TextView)findViewById(R.id.TV_PipeNum);
+                int num = Integer.parseInt(TV_PipeNum.getText().toString())-1;
+                TV_PipeNum.setText(""+num);
+            }
+        });
+
+        BT_SetPipe.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                if (InitBeaconPositionActivity.this.marker!=null)
+                {
+
+                    Beacon beacon = GlobalData.beaconlist.get(InitBeaconPositionActivity.this.marker.getTitle());
+                    switch (GlobalData.BeaconType.values()[beacon.type]){
+                        case  STAIRS:
+                        case  ELEVATOR:
+                            TextView num = (TextView)findViewById(R.id.TV_PipeNum);
+                            beacon.pipeNum = Integer.parseInt(num.getText().toString());
+                            Tools.updateBeacon(beacon,InitBeaconPositionActivity.this);
+                            break;
+                        default:
+                            break;
+                    }
+                }
+            }
+        });
         BT_Indoor.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
                 if (InitBeaconPositionActivity.this.marker!=null)
                 {
                     Beacon beacon = GlobalData.beaconlist.get(InitBeaconPositionActivity.this.marker.getTitle());
-                    beacon.type = BeaconType.INDOOR.ordinal();
+                    beacon.type = GlobalData.BeaconType.INDOOR.ordinal();
                     Tools.updateBeacon(beacon,InitBeaconPositionActivity.this);
                 }
             }
@@ -160,7 +202,7 @@ public class InitBeaconPositionActivity extends ActionBarActivity {
             public void onClick(View view) {
                 if (InitBeaconPositionActivity.this.marker!=null) {
                     Beacon beacon = GlobalData.beaconlist.get(InitBeaconPositionActivity.this.marker.getTitle());
-                    beacon.type = BeaconType.OUTDOOR.ordinal();
+                    beacon.type = GlobalData.BeaconType.OUTDOOR.ordinal();
                     Tools.updateBeacon(beacon, InitBeaconPositionActivity.this);
                 }
             }
@@ -170,7 +212,7 @@ public class InitBeaconPositionActivity extends ActionBarActivity {
             public void onClick(View view) {
                 if (InitBeaconPositionActivity.this.marker!=null) {
                     Beacon beacon = GlobalData.beaconlist.get(InitBeaconPositionActivity.this.marker.getTitle());
-                    beacon.type = BeaconType.STAIRS.ordinal();
+                    beacon.type = GlobalData.BeaconType.STAIRS.ordinal();
                     Tools.updateBeacon(beacon, InitBeaconPositionActivity.this);
                 }
             }
@@ -180,7 +222,7 @@ public class InitBeaconPositionActivity extends ActionBarActivity {
             public void onClick(View view) {
                 if (InitBeaconPositionActivity.this.marker!=null) {
                     Beacon beacon = GlobalData.beaconlist.get(InitBeaconPositionActivity.this.marker.getTitle());
-                    beacon.type = BeaconType.ELEVATOR.ordinal();
+                    beacon.type = GlobalData.BeaconType.ELEVATOR.ordinal();
                     Tools.updateBeacon(beacon, InitBeaconPositionActivity.this);
                 }
             }
@@ -312,7 +354,7 @@ public class InitBeaconPositionActivity extends ActionBarActivity {
             public void onCheckedChanged(CompoundButton compoundButton, boolean b) {
                 if (b)
                 {
-                    edge_action = EdgeAction.NORMAL;
+                    edge_action = GlobalData.EdgeAction.NORMAL;
                 }
             }
         });
@@ -320,7 +362,7 @@ public class InitBeaconPositionActivity extends ActionBarActivity {
             @Override
             public void onCheckedChanged(CompoundButton compoundButton, boolean b) {
                 if (b) {
-                    edge_action = EdgeAction.ADD_LINE;
+                    edge_action = GlobalData.EdgeAction.ADD_LINE;
                 }
             }
         });
@@ -329,16 +371,14 @@ public class InitBeaconPositionActivity extends ActionBarActivity {
             public void onCheckedChanged(CompoundButton compoundButton, boolean b) {
                 if (b)
                 {
-                    edge_action = EdgeAction.DELETE_LINE;
+                    edge_action = GlobalData.EdgeAction.DELETE_LINE;
                 }
             }
         });
 
     }
 
-    private EdgeAction edge_action = EdgeAction.NORMAL;
-    private boolean addEdgeFlag =false;
-    private  Circle circle;
+
     private void initMap(){
         map=((MapFragment)getFragmentManager().findFragmentById(R.id.map)).getMap();
        // map.setMapType(GoogleMap.MAP_TYPE_SATELLITE);
@@ -365,12 +405,14 @@ public class InitBeaconPositionActivity extends ActionBarActivity {
                 switch (edge_action) {
                     case NORMAL:
                         InitBeaconPositionActivity.this.marker = marker;
-                        /*marker.setSnippet("x:" + Tools.formatFloat(marker.getPosition().latitude)
-                                + " y:" + Tools.formatFloat(marker.getPosition().longitude)
-                                + "\n max_rssi:" + markerList.get(marker.getTitle()).max_rssi);*/
-                        marker.setSnippet("nabors count = " +GlobalData.beaconlist.get(marker.getTitle()).neighbors.size()
+                        marker.setSnippet("nabors: " +GlobalData.beaconlist.get(marker.getTitle()).neighbors.size()
+                                +" edges: "+GlobalData.beaconlist.get(marker.getTitle()).edges.size()
+                                + "type: " + +GlobalData.beaconlist.get(marker.getTitle()).type
+                                + "pipeNum: " + +GlobalData.beaconlist.get(marker.getTitle()).pipeNum
+                                + "\n max_rssi:" + markerList.get(marker.getTitle()).max_rssi);
+                       /* marker.setSnippet("nabors count = " +GlobalData.beaconlist.get(marker.getTitle()).neighbors.size()
                                 +" edges  count = "+GlobalData.beaconlist.get(marker.getTitle()).edges.size()
-                                + "type = " + +GlobalData.beaconlist.get(marker.getTitle()).type);
+                                + "type = " + +GlobalData.beaconlist.get(marker.getTitle()).type);*/
 
                         markerList.get(marker.getTitle()).markerOptions.position(marker.getPosition());
                         markerList.get(marker.getTitle()).position = marker.getPosition();
@@ -539,7 +581,7 @@ public class InitBeaconPositionActivity extends ActionBarActivity {
             Beacon sensor = markerList.get(ita.next());
             if (sensor.floor == floor)
             {
-                map.addMarker(sensor.markerOptions);
+                map.addMarker(sensor.markerOptions).setDraggable(true);
             }
 
         }

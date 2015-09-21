@@ -210,6 +210,9 @@ public class Tools extends  Activity {
         Beacon max_sensor=null;
         int max_rssi=-10000;
 
+        if (list==null )
+            return  null;
+
         Iterator<String> keyite =  list.keySet().iterator();
         while (keyite.hasNext())
         {

@@ -3,6 +3,7 @@ package com.iot.locallization_ibeacon.activity;
 import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
+import android.graphics.Color;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
@@ -28,8 +29,11 @@ import com.google.android.gms.maps.model.GroundOverlayOptions;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
+import com.google.android.gms.maps.model.PolylineOptions;
 import com.iot.locallization_ibeacon.R;
 import com.iot.locallization_ibeacon.algorithm.WPL_Limit_BlutoothLocationAlgorithm;
+import com.iot.locallization_ibeacon.pojo.Beacon;
+import com.iot.locallization_ibeacon.pojo.Edge;
 import com.iot.locallization_ibeacon.pojo.GlobalData;
 import com.iot.locallization_ibeacon.pojo.Node;
 import com.iot.locallization_ibeacon.tools.Tools;
@@ -40,13 +44,16 @@ import java.io.FileWriter;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 
 
 public class DemoActivity extends Activity {
     private GoogleMap map;
     private Marker currmark=null;
-
+    public static  String logstring ="";
+    private Handler updateHandler = new Handler();
     private GroundOverlay buildingMapImage =null;
     private Location currentLocation =null;
     private LocationManager locationManager;
@@ -56,10 +63,16 @@ public class DemoActivity extends Activity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_demo);
-        GlobalData.loghandler = updatelog ;
-        initMap();
-        changeBuildingMap();
-        initButton();
+
+        GlobalData.loghandler = updatelog ;//如果楼层改变loghandler用于改变地图
+
+        //-------------------------------------------------------------------
+        //下面两步顺序不能改变
+        initMap();  //初始化地图
+        readConf(); //读取配置文件
+        //--------------------------------------------------------------------
+
+        changeBuildingMap();    //显示当前楼层地图
     }
 
     /**
@@ -110,6 +123,39 @@ public class DemoActivity extends Activity {
         location.setHandler(updatelog);
         location.DoLocalization();
         updateLocation(GlobalData.currentPosition);
+
+        cleanScanbeaconlist();
+
+    }
+
+    private  void cleanScanbeaconlist(){
+        Date now = new Date();
+
+
+            Iterator<String> iter =GlobalData.scanbeaconlist.keySet().iterator();  //用一个时间段内扫描到的beacon计算
+            Log.e("cleanScanbeaconlist","cleanScanbeaconlist start size = "+GlobalData.scanbeaconlist.size());
+            List<Beacon> removeList = new ArrayList<>();
+            while (iter.hasNext()) {
+                String key =  iter.next();
+                Beacon sensor =GlobalData.scanbeaconlist.get(key);
+                Log.e("out   ============", "time = " + (now.getTime() - sensor.updateTime) );
+                if (now.getTime() - sensor.updateTime > 2000)
+                {
+                    Log.e("int   ============", "time = " + (now.getTime() - sensor.updateTime) );
+                    removeList.add(sensor);
+                }
+            }
+
+
+          for (int index = 0 ; index < removeList.size();index++){
+                Beacon beacon = removeList.get(index);
+                GlobalData.scanbeaconlist.remove(beacon.ID);
+            }
+
+            removeList =null;
+        Log.e("cleanScanbeaconlist","cleanScanbeaconlist end size = "+GlobalData.scanbeaconlist.size());
+
+
 
     }
 
@@ -169,43 +215,30 @@ public class DemoActivity extends Activity {
         CameraUpdate update = CameraUpdateFactory.newLatLngZoom(GlobalData.ancer, 23);
         map.moveCamera(update);
 
-        File file = new File(Tools.path);
-        if(file.exists())
-        {
-            Tools.ReadConfigFile(DemoActivity.this);
+    }
+
+
+    private void readConf(){
+
+        Tools.ReadConfigFile(this);
+        List<Edge> edges = Tools.getAllEdge(this);
+        for(int index = 0 ; index < edges.size() ; index++){
+            Edge edge = edges.get(index);
+
+
+            Beacon from = GlobalData.beaconlist.get(edge.ID_From);
+            Beacon to = GlobalData.beaconlist.get(edge.ID_To);
+            from.neighbors.put(to.ID,to);
+            from.edges.put(edge.ID,edge);
+
+            edge.polyline = map.addPolyline(new PolylineOptions()
+                    .add(from.position)
+                    .add(to.position).color(Color.RED));
         }
+        updateHandler.postDelayed(updateMap, 1000);//开始更新地图
 
-        updateHandler.postDelayed(updateMap, 1000);
     }
 
-    /**
-     * 初始化按钮监听事件
-     */
-    public void initButton(){
-        Button start = (Button)findViewById(R.id.BT_START);
-        start.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                ID++;
-                Counter = 0;
-                startflag=true;
-
-            }
-        });
-
-        Button seve = (Button)findViewById(R.id.BT_SAVE);
-        seve.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                try {
-                    writeData();
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
-                list.clear();
-            }
-        });
-    }
 
     LocationListener GPSlistener =  new LocationListener() {
         @Override
@@ -246,10 +279,6 @@ public class DemoActivity extends Activity {
         }
     };
 
-    private int Counter = 0;
-    private int ID = 0;
-    private List<Node> list = new ArrayList();
-    private boolean startflag= false;
 
     private Runnable updateMap = new Runnable()
     {
@@ -257,56 +286,21 @@ public class DemoActivity extends Activity {
         public void run()
         {
             updateMap();
-            updateHandler.postDelayed(updateMap, 1500);
+            updateHandler.postDelayed(updateMap, 1000);
         }
     };
-
-
-    private int count = 0;
-    Handler updateHandler = new Handler()
-    {
-        @Override
-        public void handleMessage(Message msg)
-        {
-            super.handleMessage(msg);
-            updateMap();
-        }
-    };
-
-
-    public static  String logstring ="";
 
     Handler updatelog = new Handler()
     {
         @Override
         public void handleMessage(Message msg)
         {
-
             if (msg.arg1 == 2)
             {
                 changeBuildingMap();
             }
-
             super.handleMessage(msg);
 
         }
     };
-
-    private void writeData() throws Exception {
-        Date date = new Date();
-        SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd H:m:s");
-        File file = new File("/sdcard/ibeacon"+format.format(date)+".txt");
-
-        BufferedWriter writer = new BufferedWriter(new FileWriter(file));
-        for (int i = 0 ; i <  list.size() ; i++){
-            writer.append(list.get(i).toString()+"\n");
-            Log.e("indoor",list.get(i).toString());
-        }
-
-        writer.flush();
-        writer.close();
-        new Toast(this).makeText(this,"data has been write to the file +sampleData"+format.format(date)+".txt",Toast.LENGTH_LONG).show();
-
-    }
-
 }

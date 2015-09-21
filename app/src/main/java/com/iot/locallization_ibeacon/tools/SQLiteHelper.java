@@ -51,7 +51,8 @@ public class SQLiteHelper extends SQLiteOpenHelper {
                 "lng    varchar(20)," +
                 "floor  varchar(20)," +
                 "rssi   varchar(20)," +
-                "type   varchar(20))");
+                "type   varchar(20)," +
+                "pipeNum   varchar(20))");
         List<Beacon> beacons = Tools.ReadConfigFile2();
         for (Beacon beacon: beacons) {
             ContentValues values = new ContentValues();
@@ -64,6 +65,7 @@ public class SQLiteHelper extends SQLiteOpenHelper {
             values.put("floor",beacon.floor);
             values.put("rssi",beacon.max_rssi);
             values.put("type","0");
+            values.put("pipeNum","0");
             sqLiteDatabase.insert("device",null,values);
         }
     }
@@ -81,7 +83,7 @@ public class SQLiteHelper extends SQLiteOpenHelper {
         values.put("floor",beacon.floor);
         values.put("rssi",beacon.max_rssi);
         values.put("type", beacon.type + "");
-
+        values.put("pipeNum", beacon.pipeNum + "");
         sqLiteDatabase.insert("device", null, values);
     }
 
@@ -105,6 +107,7 @@ public class SQLiteHelper extends SQLiteOpenHelper {
         values.put("floor", beacon.floor);
         values.put("rssi", beacon.max_rssi);
         values.put("type", beacon.type + "");
+        values.put("pipeNum", beacon.pipeNum + "");
         String[] args = {beacon.ID};
 
         sqLiteDatabase.update("device", values, "id=?", args);
@@ -126,11 +129,11 @@ public class SQLiteHelper extends SQLiteOpenHelper {
             beacon.floor= Integer.parseInt(cursor.getString(6));
             beacon.max_rssi  = Integer.parseInt(cursor.getString(7));
             beacon.type  = Integer.parseInt(cursor.getString(8));
-
+            beacon.pipeNum  = Integer.parseInt(cursor.getString(9));
 
             Log.e("findByID",cursor.getString(0)+" "+cursor.getString(1)+" "+cursor.getString(2)+" "
                     +cursor.getString(3)+" "+cursor.getString(4)+" "+cursor.getString(5)+" "
-                    +cursor.getString(6) + " " +cursor.getString(7) + " " +cursor.getString(8));
+                    +cursor.getString(6) + " " +cursor.getString(7) + " " +cursor.getString(8)+ " " +cursor.getString(9));
         }
 
     }
@@ -150,7 +153,7 @@ public class SQLiteHelper extends SQLiteOpenHelper {
             beacon.floor= Integer.parseInt(cursor.getString(6));
             beacon.max_rssi  = Integer.parseInt(cursor.getString(7));
             beacon.type  = Integer.parseInt(cursor.getString(8));
-
+            beacon.pipeNum  = Integer.parseInt(cursor.getString(9));
             beacons.add(beacon);
            /* Log.e("SQLiteHelper",cursor.getString(0)+" "+cursor.getString(1)+" "+cursor.getString(2)+" "
                     +cursor.getString(3)+" "+cursor.getString(4)+" "+cursor.getString(5)+" "
