@@ -295,8 +295,12 @@ public class DemoActivity extends Activity {
                     &&GlobalData.BeaconType.values()[path.get(0).type] == GlobalData.BeaconType.ELEVATOR
                     &&path.get(0).floor!=path.get(1).floor )
             {
-                Toast.makeText(this,"Please take the lift to B"+path.get(1).floor,Toast.LENGTH_SHORT).show();
-
+                TextView TV_ShowTip = (TextView)findViewById(R.id.TV_ShowTip);
+                TV_ShowTip.setText("Please take the lift to B"+path.get(1).floor);
+            }
+            else{
+                TextView TV_ShowTip = (TextView)findViewById(R.id.TV_ShowTip);
+                TV_ShowTip.setText("");
             }
             if (path.size() >=2 && GlobalData.calculateBeacons.size() >= 2
                     &&(GlobalData.calculateBeacons.get(1).ID.equals(path.get(1).ID))){
@@ -486,7 +490,7 @@ public class DemoActivity extends Activity {
             public void onSensorChanged(SensorEvent sensorEvent) {
                 float direction = sensorEvent.values[0] ;
                 setDegree(direction);
-                Log.e("onSensorChanged", " degree" + direction);// 赋值给全局变量，让指南针旋转
+                //Log.e("onSensorChanged", " degree" + direction);// 赋值给全局变量，让指南针旋转
                 if (Math.abs(LastDegree-currDegree) < 10){
 
                     return;
