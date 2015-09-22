@@ -4,6 +4,10 @@ import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
 import android.graphics.Color;
+import android.hardware.Sensor;
+import android.hardware.SensorEvent;
+import android.hardware.SensorEventListener;
+import android.hardware.SensorManager;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
@@ -28,11 +32,15 @@ import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.MapFragment;
 import com.google.android.gms.maps.model.BitmapDescriptor;
 import com.google.android.gms.maps.model.BitmapDescriptorFactory;
+import com.google.android.gms.maps.model.CameraPosition;
+import com.google.android.gms.maps.model.Circle;
+import com.google.android.gms.maps.model.CircleOptions;
 import com.google.android.gms.maps.model.GroundOverlay;
 import com.google.android.gms.maps.model.GroundOverlayOptions;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
+import com.google.android.gms.maps.model.Polyline;
 import com.google.android.gms.maps.model.PolylineOptions;
 import com.iot.locallization_ibeacon.R;
 import com.iot.locallization_ibeacon.algorithm.WPL_Limit_BlutoothLocationAlgorithm;
@@ -57,12 +65,14 @@ import java.util.Map;
 
 public class DemoActivity extends Activity {
     private GoogleMap map;
-    private Marker currmark=null;
+    private Circle currmark=null;
     public static  String logstring ="";
     private Handler updateHandler = new Handler();
     private GroundOverlay buildingMapImage =null;
     private Location currentLocation =null;
     private LocationManager locationManager;
+
+    private  boolean isNaviation =false;
     private WPL_Limit_BlutoothLocationAlgorithm location =new WPL_Limit_BlutoothLocationAlgorithm();
     Destionation destinaton ;
 
@@ -82,6 +92,7 @@ public class DemoActivity extends Activity {
 
         changeBuildingMap();    //显示当前楼层地图
         initUI();
+        initSensor();
 
     }
 
@@ -91,9 +102,11 @@ public class DemoActivity extends Activity {
 
         Destionation d1 = new Destionation("Chair of EEE", GlobalData.beaconlist.get("1128"));
         Destionation d2 = new Destionation("Men Toilet", GlobalData.beaconlist.get("1121"));
-        Destionation d3 = new Destionation("Prof Er Office", GlobalData.beaconlist.get("1101"));
+        Destionation d3 = new Destionation("Office of Prof Mo Yilin", GlobalData.beaconlist.get("114"));
         Destionation d4 = new Destionation("IOT Lab", GlobalData.beaconlist.get("1412"));
         Destionation d5= new Destionation("Robotic Lab", GlobalData.beaconlist.get("1440"));
+        Destionation d6= new Destionation("Office of Prof Costas Spanos", GlobalData.beaconlist.get("1114"));
+
 
         final List<Destionation> destionList = new ArrayList<Destionation>();
         destionList.add(d1);
@@ -101,6 +114,7 @@ public class DemoActivity extends Activity {
         destionList.add(d3);
         destionList.add(d4);
         destionList.add(d5);
+        destionList.add(d6);
 
         destinaton = destionList.get(0);
         List<String> dataList = new ArrayList<String>();
@@ -122,12 +136,20 @@ public class DemoActivity extends Activity {
 
             }
         });
-        Button start = (Button)findViewById(R.id.BT_SatrtNavigation);
+        final Button start = (Button)findViewById(R.id.BT_SatrtNavigation);
         start.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                Navigation nv = new Navigation();
-                nv.startFindPath(GlobalData.beaconlist.get("146"),GlobalData.beaconlist.get("1421"));
+                if (!isNaviation) {
+                    start.setText("Stop");
+                } else {
+                    start.setText("Start");
+                }
+
+                isNaviation = !isNaviation;
+                //Navigation nv = new Navigation();
+                //nv.startFindPath(GlobalData.beaconlist.get("146"), destinaton.postion);
+
             }
         });
 
@@ -191,15 +213,15 @@ public class DemoActivity extends Activity {
 
 
             Iterator<String> iter =GlobalData.scanbeaconlist.keySet().iterator();  //用一个时间段内扫描到的beacon计算
-            Log.e("cleanScanbeaconlist","cleanScanbeaconlist start size = "+GlobalData.scanbeaconlist.size());
+          //  Log.e("cleanScanbeaconlist","cleanScanbeaconlist start size = "+GlobalData.scanbeaconlist.size());
             List<Beacon> removeList = new ArrayList<>();
             while (iter.hasNext()) {
                 String key =  iter.next();
                 Beacon sensor =GlobalData.scanbeaconlist.get(key);
-                Log.e("out   ============", "time = " + (now.getTime() - sensor.updateTime) );
+                //Log.e("out   ============", "time = " + (now.getTime() - sensor.updateTime) );
                 if (now.getTime() - sensor.updateTime > 2000)
                 {
-                    Log.e("int   ============", "time = " + (now.getTime() - sensor.updateTime) );
+                   // Log.e("int   ============", "time = " + (now.getTime() - sensor.updateTime) );
                     removeList.add(sensor);
                 }
             }
@@ -211,12 +233,23 @@ public class DemoActivity extends Activity {
             }
 
             removeList =null;
-        Log.e("cleanScanbeaconlist","cleanScanbeaconlist end size = "+GlobalData.scanbeaconlist.size());
+        //Log.e("cleanScanbeaconlist","cleanScanbeaconlist end size = "+GlobalData.scanbeaconlist.size());
 
 
 
     }
 
+
+    public  Beacon getBestBeacon(){
+       if (GlobalData.calculateBeacons.size() > 0 ){
+           return GlobalData.calculateBeacons.get(0);
+       }
+
+        return  null;
+    }
+
+    List<Polyline> pathlines = new ArrayList<>();
+    Marker navigtionEndMark = null;
     /**
      * 更新位置
      * @param location
@@ -226,9 +259,95 @@ public class DemoActivity extends Activity {
         {
             currmark.remove();
         }
-        currmark=map.addMarker(new MarkerOptions().position(location));
+        currmark=map.addCircle(new CircleOptions().center(location)
+                .fillColor(Color.argb(100, 147, 112, 219)).radius(1).strokeWidth(0));
 
-       // currmark=map.addMarker(new MarkerOptions().position(GlobalData.currentPosition));
+
+        if (isNaviation){
+            Beacon srcBeacon = getBestBeacon();
+            if(srcBeacon==null)
+                return;
+
+            for (int i = 0 ; i < pathlines.size() ; i++){
+                pathlines.get(i).remove();
+            }
+
+            if (navigtionEndMark!=null){
+                navigtionEndMark.remove();
+            }
+
+            pathlines.clear();
+
+            Navigation nv = new Navigation();
+
+
+            List<Beacon> path = nv.startFindPath(srcBeacon, destinaton.postion);
+            if (path.size() <= 1)
+            {
+                isNaviation= false;
+                Button start = (Button)findViewById(R.id.BT_SatrtNavigation);
+                start.setText("Start");
+                Toast.makeText(this,"Congratulations!\n Navigation completed!\n Welcome to "+destinaton.name,Toast.LENGTH_LONG).show();
+                return;
+            }
+
+            if (path.size()>=2
+                    &&GlobalData.BeaconType.values()[path.get(0).type] == GlobalData.BeaconType.ELEVATOR
+                    &&path.get(0).floor!=path.get(1).floor )
+            {
+                Toast.makeText(this,"Please take the lift to B"+path.get(1).floor,Toast.LENGTH_SHORT).show();
+
+            }
+            if (path.size() >=2 && GlobalData.calculateBeacons.size() >= 2
+                    &&(GlobalData.calculateBeacons.get(1).ID.equals(path.get(1).ID))){
+                path.remove(0);
+
+            }else if (path.size() >=3 && GlobalData.calculateBeacons.size() >= 2
+                    &&(GlobalData.calculateBeacons.get(1).ID.equals(path.get(2).ID))){
+                path.remove(0);
+
+            }
+
+            pathlines.add(map.addPolyline(new PolylineOptions()
+                    .add(GlobalData.currentPosition)
+                    .add(path.get(0).position).color(Color.RED)));
+
+            for (int i = 0 ; i < path.size()-1 ; i++){
+
+                if (path.get(i).floor == GlobalData.curr_floor){
+                    Polyline line =  map.addPolyline(new PolylineOptions()
+                            .add(path.get(i).position)
+                            .add(path.get(i+1).position).color(Color.RED));
+                    pathlines.add(line);
+                }else{
+                    Polyline line =  map.addPolyline(new PolylineOptions()
+                            .add(path.get(i).position)
+                            .add(path.get(i+1).position).color(Color.GREEN).geodesic(true));
+                    pathlines.add(line);
+                }
+
+
+
+            }
+            navigtionEndMark = map.addMarker(new MarkerOptions().position(path.get(path.size()-1).position));
+            navigtionEndMark.setTitle(destinaton.name);
+            navigtionEndMark.setSnippet("Your destination is here");
+            navigtionEndMark.showInfoWindow();
+
+        }
+        else
+        {
+            if (pathlines.size()!=0){
+                for (int i = 0 ; i < pathlines.size() ; i++){
+                    pathlines.get(i).remove();
+                }
+                pathlines.clear();
+            }
+
+            if (navigtionEndMark!=null){
+                navigtionEndMark.remove();
+            }
+        }
     }
 
 
@@ -289,9 +408,9 @@ public class DemoActivity extends Activity {
             from.neighbors.put(to.ID,to);
             from.edges.put(edge.ID,edge);
 
-            edge.polyline = map.addPolyline(new PolylineOptions()
+            /*edge.polyline = map.addPolyline(new PolylineOptions()
                     .add(from.position)
-                    .add(to.position).color(Color.RED));
+                    .add(to.position).color(Color.RED));*/
         }
         updateHandler.postDelayed(updateMap, 1000);//开始更新地图
 
@@ -337,7 +456,66 @@ public class DemoActivity extends Activity {
         }
     };
 
+    private SensorManager mSensorManager;
+    private Sensor mOrientationSensor;
 
+    private int length =10;
+    private int pos=0;
+    public float currDegree;
+    public float[] AvgDegree = new float[length];
+
+    public float LastDegree =0;
+    public void setDegree(float degree){
+        AvgDegree[pos] = degree;
+        pos = (pos + 1)%length;
+        float sum = 0;
+        for (int i = 0 ; i < AvgDegree.length;i++){
+            sum += AvgDegree[i];
+        }
+        currDegree=sum/length;
+    }
+
+    public void initSensor(){
+
+        mSensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
+        mOrientationSensor = mSensorManager.getDefaultSensor(Sensor.TYPE_ORIENTATION);
+        if (mOrientationSensor != null) {
+            mSensorManager.registerListener(new SensorEventListener(){
+
+            @Override
+            public void onSensorChanged(SensorEvent sensorEvent) {
+                float direction = sensorEvent.values[0] ;
+                setDegree(direction);
+                Log.e("onSensorChanged", " degree" + direction);// 赋值给全局变量，让指南针旋转
+                if (Math.abs(LastDegree-currDegree) < 10){
+
+                    return;
+                }
+
+
+
+                CameraPosition cameraPosition = new CameraPosition.Builder()
+                        .target(GlobalData.currentPosition).zoom(map.getCameraPosition().zoom)
+                        .bearing(currDegree).build();
+
+                map.animateCamera(CameraUpdateFactory.newCameraPosition(cameraPosition));
+                LastDegree = currDegree;
+
+            }
+
+            @Override
+            public void onAccuracyChanged(Sensor sensor, int i) {
+
+            }},mOrientationSensor, 2);
+        } else {
+            /*Toast.makeText(this, R.string.cannot_get_sensor, Toast.LENGTH_SHORT)
+                    .show();*/
+        }
+    }
+
+    private float normalizeDegree(float degree) {
+        return (degree + 720) % 360;
+    }
     private Runnable updateMap = new Runnable()
     {
         @Override

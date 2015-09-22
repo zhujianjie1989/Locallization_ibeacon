@@ -521,14 +521,14 @@ public class InitBeaconPositionActivity extends ActionBarActivity {
 
                 Beacon sensor = new Beacon();
                 sensor.markerOptions = new MarkerOptions().position(latLng)
-                        .draggable(true).title("111"+ markID)
+                        .draggable(true).title("xxxxx"+ markID)
                         .snippet("x:" + Tools.formatFloat(latLng.latitude)
                                 + " y:" + Tools.formatFloat(latLng.longitude) + "\n"
                                 + "max_rssi:" + sensor.max_rssi);
 
                 sensor.ID = sensor.markerOptions.getTitle();
                 sensor.position = latLng;
-                sensor.major = "111";
+                sensor.major = "xxxxx";
                 sensor.minor = markID + "";
                 sensor.floor = floor;
                 markID++;
@@ -562,6 +562,7 @@ public class InitBeaconPositionActivity extends ActionBarActivity {
                         + "\n max_rssi:" + markerList.get(marker.getTitle()).max_rssi);
                 markerList.get(marker.getTitle()).markerOptions.position(marker.getPosition());
                 markerList.get(marker.getTitle()).position = marker.getPosition();
+                Tools.updateBeacon( markerList.get(marker.getTitle()),InitBeaconPositionActivity.this);
 
             }
         });
@@ -587,6 +588,8 @@ public class InitBeaconPositionActivity extends ActionBarActivity {
         }
 
         List<Edge> edges = Tools.getAllEdge(this);
+        GlobalData.edges= null;
+        GlobalData.edges = edges;
         for(int index = 0 ; index < edges.size() ; index++){
             Edge edge = edges.get(index);
 
@@ -595,12 +598,20 @@ public class InitBeaconPositionActivity extends ActionBarActivity {
             Beacon to = GlobalData.beaconlist.get(edge.ID_To);
             from.neighbors.put(to.ID,to);
             from.edges.put(edge.ID,edge);
-
-            edge.polyline = map.addPolyline(new PolylineOptions()
+/*            edge.polyline = map.addPolyline(new PolylineOptions()
                     .add(from.position)
                     .add(to.position).color(Color.RED));
+            edge.polyline.remove();*/
+            if (from.floor == GlobalData.curr_floor){
+                edge.polyline = map.addPolyline(new PolylineOptions()
+                        .add(from.position)
+                        .add(to.position).color(Color.RED));
+            }
+
 
         }
+
+
 
 
 
@@ -630,12 +641,14 @@ public class InitBeaconPositionActivity extends ActionBarActivity {
                 return;
 
         }
+
         map.clear();
         if (image != null){
 
             image = map.addGroundOverlay(new GroundOverlayOptions()
                     .image(img).anchor(0, 0).bearing(-45f)
                     .position(GlobalData.ancer, GlobalData.hw[0], GlobalData.hw[1]));
+
         }
 
         Iterator<String> key_ite = markerList.keySet().iterator();
@@ -643,8 +656,23 @@ public class InitBeaconPositionActivity extends ActionBarActivity {
         while(key_ite.hasNext()){
             Beacon sensor = markerList.get(key_ite.next());
             if (sensor.floor ==floor){
+                map.addMarker(sensor.markerOptions).setDraggable(true);
+            }
 
-                map.addMarker(sensor.markerOptions);
+
+        }
+
+        List<Edge> edges =  GlobalData.edges;
+        for(int index = 0 ; index < edges.size() ; index++){
+            Edge edge = edges.get(index);
+            Beacon from = GlobalData.beaconlist.get(edge.ID_From);
+            Beacon to = GlobalData.beaconlist.get(edge.ID_To);
+            from.neighbors.put(to.ID,to);
+            from.edges.put(edge.ID,edge);
+            if (from.floor == floor){
+                edge.polyline = map.addPolyline(new PolylineOptions()
+                        .add(from.position)
+                        .add(to.position).color(Color.RED));
             }
 
 

@@ -10,11 +10,13 @@ import com.iot.locallization_ibeacon.R;
 import com.iot.locallization_ibeacon.activity.DemoActivity;
 import com.iot.locallization_ibeacon.activity.InitBeaconPositionActivity;
 import com.iot.locallization_ibeacon.pojo.Beacon;
+import com.iot.locallization_ibeacon.pojo.Edge;
 import com.iot.locallization_ibeacon.pojo.GlobalData;
 import com.iot.locallization_ibeacon.tools.Tools;
 
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map.Entry;
@@ -36,23 +38,51 @@ public class WPL_Limit_BlutoothLocationAlgorithm extends BluetoothLocalizationAl
 		double x= 0;
 		double y =0;
 		List<Beacon> sensorList = SortWifiSignal();
-		/*DemoActivity.logstring =" minor:"+sensorList.get(0).minor+"rssi:"+(sensorList.get(0).rssi-sensorList.get(0).max_rssi)+" ";
-		DemoActivity.logstring +=" minor:"+sensorList.get(1).minor+"rssi:"+(sensorList.get(1).rssi-sensorList.get(1).max_rssi)+" ";
-		DemoActivity.logstring +=" minor:"+sensorList.get(2).minor+"rssi:"+(sensorList.get(2).rssi-sensorList.get(2).max_rssi)+"";*/
-		//handler.sendMessage(new Message());
 
 
+		/*if (sensorList.size()>0 && GlobalData.calculateBeacons.size()>0){
 
+			for (Beacon max_beacon: sensorList){
+				//Beacon max_beacon = sensorList.get(0);
+				boolean flag = true;
+				for(Beacon beacon: GlobalData.calculateBeacons){
+
+					if (beacon.neighbors.get(max_beacon.ID)!=null)
+					{
+						flag= false;
+					}
+				}
+
+				if(flag)
+				{
+					sensorList.remove(max_beacon) ;
+				}
+			}
+
+
+		}*/
 
 		if (sensorList.size()>0
 				&& (sensorList.get(0).type == GlobalData.BeaconType.INDOOR.ordinal()
 		|| sensorList.get(0).type == GlobalData.BeaconType.STAIRS.ordinal())){
 			GlobalData.currentPosition = sensorList.get(0).position;
+			GlobalData.calculateBeacons.clear();
+			GlobalData.calculateBeacons.add(sensorList.get(0));
 			return ;
 		}
 
 
 		cleanScanbeaconlist(sensorList);
+
+
+		GlobalData.calculateBeacons.clear();
+		if (sensorList.size()>=2){
+			GlobalData.calculateBeacons.add(sensorList.get(0));
+			GlobalData.calculateBeacons.add(sensorList.get(1));
+		}else if (sensorList.size() > 0 ){
+			GlobalData.calculateBeacons.add(sensorList.get(0));
+		}
+
 
 
 		int len=0;
@@ -86,7 +116,7 @@ public class WPL_Limit_BlutoothLocationAlgorithm extends BluetoothLocalizationAl
 
 		x = x / sumDef;
 		y = y / sumDef;
-		Log.e("xxxxxxxxx","x = "+x+" y = "+y);
+		//Log.e("xxxxxxxxx","x = "+x+" y = "+y);
 		GlobalData.currentPosition = new LatLng(x,y);
 
 		/*Date time = new Date();
